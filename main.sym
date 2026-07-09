@@ -7,86 +7,89 @@ Symbol Table
     .__.ABS.                                                    =  000000 G
     .__.CPU.                                                    =  000000 L
     .__.H$L.                                                    =  000001 L
-  A AdjSix                                                         0002B7 R
-  A AdjSixAlm                                                      000342 R
-  A AdjTimeDone                                                    000478 R
-  A AdjTimeDoneSec                                                 00047C R
-  A AdjTwo                                                         0002C2 R
-  A AdjTwoAlm                                                      00034D R
-  A AdjustTime                                                     000437 R
-  A AlarmSet                                                       0001DA R
-  A AlarmSetLogic                                                  0002DC R
-  A Backspace                                                      0003FA R
-  A CheckAlarm                                                     000126 R
-  A ChkDone                                                        000147 R
-  A ClearDone                                                      00037D R
-  A ClearLoop                                                      00036E R
-  A ClearScreen                                                    000406 R
-  A ClearShift                                                     000367 R
-  A ClockMode                                                      0001CD R
-  A ClockSet                                                       000217 R
-  A DayDone                                                        000470 R
-  A Delayloop                                                      0000AD R
-  A DisableAlm                                                     0001A3 R
-  A DispAlarm                                                      0004F1 R
-  A DumbDelay                                                      000574 R
-  A DumbDone                                                       00057E R
-  A DumbLoop                                                       000578 R
-  A EnableAlm                                                      0001AE R
-  A EndLoop                                                        0000F0 R
-  A HrLowOver                                                      000469 R
-  A MakeBeep                                                       000565 R
-  A MinHighOver                                                    00045B R
-  A MinLowOver                                                     000451 R
-  A MovOne                                                         000278 R
-  A MovOneAlm                                                      000305 R
-  A MovRight                                                       000412 R
-  A MovTwo                                                         000273 R
-  A MovTwoAlm                                                      000300 R
-  A NoAlmIcon                                                      000181 R
-  A NoBeep                                                         0000E7 R
-  A PopDone                                                        0003B5 R
-  A PopLoop                                                        000391 R
-  A PopulateShift                                                  000388 R
-  A PrintVal                                                       0002CA R
-  A PrintValAlm                                                    000355 R
-  A PulseClk                                                       0003A6 R
-  A RegularMode                                                    000148 R
-  A ResetClk                                                       00047D R
-  A ReturnHome                                                     00041E R
-  A SecHighOver                                                    000447 R
-  A SecLowOv                                                       00043D R
-  A SendCommand                                                    0003C0 R
-  A SendLetter                                                     0003DB R
+  A AdjSix                                                         00033B R
+  A AdjSixAlm                                                      0003DA R
+  A AdjTimeDone                                                    000511 R
+  A AdjTimeDoneSec                                                 000515 R
+  A AdjTwo                                                         000346 R
+  A AdjTwoAlm                                                      0003E5 R
+  A AdjustTime                                                     0004CF R
+  A AlarmSet                                                       00024C R
+  A AlarmSetLogic                                                  000360 R
+  A Backspace                                                      000492 R
+  A Check24                                                        000501 R
+  A CheckAlarm                                                     000170 R
+  A ChkDone                                                        000197 R
+  A ClearDone                                                      000415 R
+  A ClearLoop                                                      000406 R
+  A ClearScreen                                                    00049E R
+  A ClearShift                                                     0003FF R
+  A ClockMode                                                      00023F R
+  A ClockSet                                                       000289 R
+  A Delayloop                                                      0000E2 R
+  A DisableAlm                                                     0001FA R
+  A DispAlarm                                                      00058A R
+  A DumbDelay                                                      00060D R
+  A DumbDone                                                       000617 R
+  A DumbLoop                                                       000611 R
+  A EnableAlm                                                      00020D R
+  A EndLoop                                                        00012C R
+  A MakeBeep                                                       0005FE R
+  A MinHighOver                                                    0004F3 R
+  A MinLowOver                                                     0004E9 R
+  A MovOne                                                         0002F3 R
+  A MovOneAlm                                                      000392 R
+  A MovRight                                                       0004AA R
+  A MovTwo                                                         0002EE R
+  A MovTwoAlm                                                      00038D R
+  A NoAlmIcon                                                      0001CF R
+  A NoBeep                                                         000123 R
+  A NoSecUpd                                                       000015 R
+  A PopDone                                                        00044D R
+  A PopLoop                                                        000429 R
+  A PopulateShift                                                  000420 R
+  A PrintVal                                                       00034E R
+  A PrintValAlm                                                    0003ED R
+  A PulseClk                                                       00043E R
+  A RegularMode                                                    000198 R
+  A ResetClk                                                       000516 R
+  A ReturnHome                                                     0004B6 R
+  A SecHighOver                                                    0004DF R
+  A SecLowOv                                                       0004D5 R
+  A SendCommand                                                    000458 R
+  A SendLetter                                                     000473 R
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8)  Page 2
 Hexadecimal [24-Bits]
 
 Symbol Table
 
-  A Setup                                                          000000 R
-  A ShiftO                                                         00039B R
-  A ShiftZ                                                         0003A2 R
-  A Skip                                                           0000D6 R
-  A SkipAdj                                                        000111 R
-  A SkipAlmInc                                                     000365 R
-  A SkipAlmMov                                                     000315 R
-  A SkipAlmToggle                                                  0001B6 R
-  A SkipBeep                                                       00056F R
-  A SkipClkInc                                                     0002DA R
-  A SkipClkMov                                                     000288 R
-  A SkipDispUpdAlm                                                 000213 R
-  A SkipDispUpdClk                                                 000250 R
-  A SkipDispUpdReg                                                 00018C R
-  A SkipSec                                                        000123 R
-  A SkipSnooze                                                     0001CC R
-  A ToStart                                                        00027E R
-  A ToStartAlm                                                     00030B R
+  A SetTwo                                                         000138 R
+  A Setup                                                          000016 R
+  A ShiftO                                                         000433 R
+  A ShiftZ                                                         00043A R
+  A Skip                                                           000112 R
+  A SkipAdj                                                        00015B R
+  A SkipAlmInc                                                     0003FD R
+  A SkipAlmMov                                                     0003A2 R
+  A SkipAlmToggle                                                  000215 R
+  A SkipBeep                                                       000608 R
+  A SkipClkInc                                                     00035E R
+  A SkipClkMov                                                     000303 R
+  A SkipDispUpdAlm                                                 000285 R
+  A SkipDispUpdClk                                                 0002C2 R
+  A SkipDispUpdReg                                                 0001DA R
+  A SkipSec                                                        00016D R
+  A SkipSnooze                                                     00023E R
+  A SkipTwo                                                        00013C R
+  A ToStart                                                        0002F9 R
+  A ToStartAlm                                                     000398 R
     ___sdcc_external_startup                                       ****** GX
   5 __interrupt_vect                                               000000 R
   6 __sdcc_init_data                                               000009 R
-  5 __sdcc_program_startup                                         000004 R
+  5 __sdcc_program_startup                                         000018 R
   3 __start__stack                                                 000000 R
-  A _main                                                          000000 GR
+  A _main                                                          000016 GR
+  A _rtc_isr                                                       000000 GR
     l_DATA                                                         ****** GX
     l_INITIALIZER                                                  ****** GX
     s_DATA                                                         ****** GX
@@ -105,11 +108,11 @@ Area Table
    2 INITIALIZED                                size      0   flags    0
    3 SSEG                                       size      1   flags    0
    4 DABS                                       size      0   flags    8
-   5 HOME                                       size      7   flags    0
+   5 HOME                                       size     1B   flags    0
    6 GSINIT                                     size     23   flags    0
    7 GSFINAL                                    size      3   flags    0
    8 CONST                                      size      0   flags    0
    9 INITIALIZER                                size      0   flags    0
-   A CODE                                       size    581   flags    0
+   A CODE                                       size    61A   flags    0
    B CABS                                       size      0   flags    8
 

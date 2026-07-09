@@ -8,692 +8,753 @@
                                       8 ; Public variables in this module
                                       9 ;--------------------------------------------------------
                                      10 	.globl _main
-                                     11 ;--------------------------------------------------------
-                                     12 ; ram data
-                                     13 ;--------------------------------------------------------
-                                     14 	.area DATA
-                                     15 ;--------------------------------------------------------
-                                     16 ; ram data
-                                     17 ;--------------------------------------------------------
-                                     18 	.area INITIALIZED
-                                     19 ;--------------------------------------------------------
-                                     20 ; Stack segment in internal ram
-                                     21 ;--------------------------------------------------------
-                                     22 	.area SSEG
-      000000                         23 __start__stack:
-      000000                         24 	.ds	1
-                                     25 
-                                     26 ;--------------------------------------------------------
-                                     27 ; absolute external ram data
-                                     28 ;--------------------------------------------------------
-                                     29 	.area DABS (ABS)
-                                     30 
-                                     31 ; default segment ordering for linker
-                                     32 	.area HOME
-                                     33 	.area GSINIT
-                                     34 	.area GSFINAL
-                                     35 	.area CONST
-                                     36 	.area INITIALIZER
-                                     37 	.area CODE
-                                     38 
-                                     39 ;--------------------------------------------------------
-                                     40 ; interrupt vector
-                                     41 ;--------------------------------------------------------
-                                     42 	.area HOME
-      000000                         43 __interrupt_vect:
-      000000 82v00u00u00             44 	int s_GSINIT ; reset
-                                     45 ;--------------------------------------------------------
-                                     46 ; global & static initialisations
-                                     47 ;--------------------------------------------------------
-                                     48 	.area HOME
-                                     49 	.area GSINIT
-                                     50 	.area GSFINAL
-                                     51 	.area GSINIT
-      000000 CDr00r00         [ 4]   52 	call	___sdcc_external_startup
-      000003 4D               [ 1]   53 	tnz	a
-      000004 27 03            [ 1]   54 	jreq	__sdcc_init_data
-      000006 CCr00r04         [ 2]   55 	jp	__sdcc_program_startup
-      000009                         56 __sdcc_init_data:
-                                     57 ; stm8_genXINIT() start
-      000009 AEr00r00         [ 2]   58 	ldw x, #l_DATA
-      00000C 27 07            [ 1]   59 	jreq	00002$
-      00000E                         60 00001$:
-      00000E 72 4FuFFuFF      [ 1]   61 	clr (s_DATA - 1, x)
-      000012 5A               [ 2]   62 	decw x
-      000013 26 F9            [ 1]   63 	jrne	00001$
-      000015                         64 00002$:
-      000015 AEr00r00         [ 2]   65 	ldw	x, #l_INITIALIZER
-      000018 27 09            [ 1]   66 	jreq	00004$
-      00001A                         67 00003$:
-      00001A D6uFFuFF         [ 1]   68 	ld	a, (s_INITIALIZER - 1, x)
-      00001D D7uFFuFF         [ 1]   69 	ld	(s_INITIALIZED - 1, x), a
-      000020 5A               [ 2]   70 	decw	x
-      000021 26 F7            [ 1]   71 	jrne	00003$
-      000023                         72 00004$:
-                                     73 ; stm8_genXINIT() end
-                                     74 	.area GSFINAL
-      000000 CCr00r04         [ 2]   75 	jp	__sdcc_program_startup
-                                     76 ;--------------------------------------------------------
-                                     77 ; Home
-                                     78 ;--------------------------------------------------------
-                                     79 	.area HOME
-                                     80 	.area HOME
-      000004                         81 __sdcc_program_startup:
-      000004 CCr00r00         [ 2]   82 	jp	_main
-                                     83 ;	return from main will return to caller
+                                     11 	.globl _rtc_isr
+                                     12 ;--------------------------------------------------------
+                                     13 ; ram data
+                                     14 ;--------------------------------------------------------
+                                     15 	.area DATA
+                                     16 ;--------------------------------------------------------
+                                     17 ; ram data
+                                     18 ;--------------------------------------------------------
+                                     19 	.area INITIALIZED
+                                     20 ;--------------------------------------------------------
+                                     21 ; Stack segment in internal ram
+                                     22 ;--------------------------------------------------------
+                                     23 	.area SSEG
+      000000                         24 __start__stack:
+      000000                         25 	.ds	1
+                                     26 
+                                     27 ;--------------------------------------------------------
+                                     28 ; absolute external ram data
+                                     29 ;--------------------------------------------------------
+                                     30 	.area DABS (ABS)
+                                     31 
+                                     32 ; default segment ordering for linker
+                                     33 	.area HOME
+                                     34 	.area GSINIT
+                                     35 	.area GSFINAL
+                                     36 	.area CONST
+                                     37 	.area INITIALIZER
+                                     38 	.area CODE
+                                     39 
+                                     40 ;--------------------------------------------------------
+                                     41 ; interrupt vector
+                                     42 ;--------------------------------------------------------
+                                     43 	.area HOME
+      000000                         44 __interrupt_vect:
+      000000 82v00u00u00             45 	int s_GSINIT ; reset
+      000004 82 00 00 00             46 	int 0x000000 ; trap
+      000008 82 00 00 00             47 	int 0x000000 ; int0
+      00000C 82 00 00 00             48 	int 0x000000 ; int1
+      000010 82 00 00 00             49 	int 0x000000 ; int2
+      000014 82v00u00u00             50 	int _rtc_isr ; int3
+                                     51 ;--------------------------------------------------------
+                                     52 ; global & static initialisations
+                                     53 ;--------------------------------------------------------
+                                     54 	.area HOME
+                                     55 	.area GSINIT
+                                     56 	.area GSFINAL
+                                     57 	.area GSINIT
+      000000 CDr00r00         [ 4]   58 	call	___sdcc_external_startup
+      000003 4D               [ 1]   59 	tnz	a
+      000004 27 03            [ 1]   60 	jreq	__sdcc_init_data
+      000006 CCr00r18         [ 2]   61 	jp	__sdcc_program_startup
+      000009                         62 __sdcc_init_data:
+                                     63 ; stm8_genXINIT() start
+      000009 AEr00r00         [ 2]   64 	ldw x, #l_DATA
+      00000C 27 07            [ 1]   65 	jreq	00002$
+      00000E                         66 00001$:
+      00000E 72 4FuFFuFF      [ 1]   67 	clr (s_DATA - 1, x)
+      000012 5A               [ 2]   68 	decw x
+      000013 26 F9            [ 1]   69 	jrne	00001$
+      000015                         70 00002$:
+      000015 AEr00r00         [ 2]   71 	ldw	x, #l_INITIALIZER
+      000018 27 09            [ 1]   72 	jreq	00004$
+      00001A                         73 00003$:
+      00001A D6uFFuFF         [ 1]   74 	ld	a, (s_INITIALIZER - 1, x)
+      00001D D7uFFuFF         [ 1]   75 	ld	(s_INITIALIZED - 1, x), a
+      000020 5A               [ 2]   76 	decw	x
+      000021 26 F7            [ 1]   77 	jrne	00003$
+      000023                         78 00004$:
+                                     79 ; stm8_genXINIT() end
+                                     80 	.area GSFINAL
+      000000 CCr00r18         [ 2]   81 	jp	__sdcc_program_startup
+                                     82 ;--------------------------------------------------------
+                                     83 ; Home
                                      84 ;--------------------------------------------------------
-                                     85 ; code
-                                     86 ;--------------------------------------------------------
-                                     87 	.area CODE
-                                     88 ;	main.c: 37: void main(void){
-                                     89 ;	-----------------------------------------
-                                     90 ;	 function main
-                                     91 ;	-----------------------------------------
-      000000                         92 _main:
-                                     93 ;	main.c: 694: __endasm;
-      000000                         94 Setup:
-                                     95 ;	Misc Variables
-      000000 3F 51            [ 1]   96 	CLR	0x51 ; Regular Mode = 0, AlarmSet = 1, TimeSet = 2;
-      000002 72 12 00 52      [ 1]   97 	BSET	0x52,#1 ; Allows button pressses to be registered. Cleared when button pressed, set every second
-      000006 3F 53            [ 1]   98 	CLR	0x53 ; BeeperOn|AlmGoing|AlmSet|Count|UpdateSec|R Disp|A Disp|C Disp|
-      000008 72 16 00 53      [ 1]   99 	BSET	0x53,#3 ; UpdateSec Enabled on start
-      00000C 72 18 00 53      [ 1]  100 	BSET	0x53,#4 ; Count Enabled on start
-      000010 72 1A 00 53      [ 1]  101 	BSET	0x53,#5 ; Alm Enabled on start
-      000014 3F 54            [ 1]  102 	CLR	0x54 ; Used toAlm hold cursor position on clk change
-      000016 3F 55            [ 1]  103 	CLR	0x55 ; Index to hold what number to increment
-      000018 3F 56            [ 1]  104 	CLR	0x56 ; Used toAlm hold cursor position on clk change
-      00001A 3F 57            [ 1]  105 	CLR	0x57 ; Index to hold what number to increment
-                                    106 ;	Timer setup
-      00001C 35 00 50 C6      [ 1]  107 	MOV	0x50C6, #0x00 ; Set clock to 16mhz
-      000020 35 10 52 50      [ 1]  108 	MOV	0x5250, #0b00010000 ; Set clock registers
-      000024 35 00 52 60      [ 1]  109 	MOV	0x5260, #0x00 ; Dont divide clock
-      000028 35 0F 52 61      [ 1]  110 	MOV	0x5261, #0x0F ; Dont divide clock
-      00002C 35 4E 52 62      [ 1]  111 	MOV	0x5262, #0x4E ; ARRH
-      000030 35 20 52 63      [ 1]  112 	MOV	0x5263, #0x20; ARRL
-      000034 35 00 14 B4      [ 1]  113 	MOV	5300, #0x00; Set clock registers
-      000038 35 04 53 0E      [ 1]  114 	MOV	0x530E, #0x04
-      00003C 35 03 53 0F      [ 1]  115 	MOV	0x530F, #0x03 ; ARRH
-      000040 35 E8 53 10      [ 1]  116 	MOV	0x5310, #0xE8 ; ARRL
-      000044 72 11 53 04      [ 1]  117 	BRES	0x5304, #0
-      000048 72 10 53 00      [ 1]  118 	BSET	0x5300, #0
-      00004C 72 5F 50 3F      [ 1]  119 	CLR	0x503F
-                                    120 ;	Clock Settings =====================================================
-      000050 AE 03 E8         [ 2]  121 	LDW	X,#1000 ; Timer for 1s
-      000053 3F 60            [ 1]  122 	CLR	0x60 ; Sec Low
-      000055 3F 61            [ 1]  123 	CLR	0x61 ; Sec High
-      000057 3F 62            [ 1]  124 	CLR	0x62 ; Min Low
-      000059 3F 63            [ 1]  125 	CLR	0x63 ; Min High
-      00005B 35 02 00 64      [ 1]  126 	MOV	0x64,#2 ; Hr LOW
-      00005F 35 01 00 65      [ 1]  127 	MOV	0x65,#1 ; Hr High Set to 12oclock
-      000063 3F 66            [ 1]  128 	CLR	0x66 ; ASec Low
-      000065 3F 67            [ 1]  129 	CLR	0x67 ; ASec High
-      000067 3F 68            [ 1]  130 	CLR	0x68 ; AMin Low
-      000069 3F 69            [ 1]  131 	CLR	0x69 ; AMin High
-      00006B 3F 6A            [ 1]  132 	CLR	0x6A ; AHr Low
-      00006D 3F 6B            [ 1]  133 	CLR	0x6B ; AHr High ; Set alarm to midnight
-                                    134 ;	Gpio Setup ; ========================================================
-      00006F 35 FF 50 02      [ 1]  135 	MOV	0x5002, #0xFF
-      000073 35 FF 50 03      [ 1]  136 	MOV	0x5003, #0xFF
-      000077 35 FF 50 11      [ 1]  137 	MOV	0x5011, #0xFF
-      00007B 35 FF 50 12      [ 1]  138 	MOV	0x5012, #0XFF
-      00007F 35 FF 50 0D      [ 1]  139 	MOV	0x500D, #0xFF
-                                    140 ;	LCD Setup ===========================================================
-      000083 CDr03r67         [ 4]  141 	CALL	ClearShift
-      000086 A6 30            [ 1]  142 	LD	A, #0b00110000; Fx Set Cmd
-      000088 CDr03r88         [ 4]  143 	CALL	PopulateShift
-      00008B CDr03rC0         [ 4]  144 	CALL	SendCommand
-      00008E CDr03r67         [ 4]  145 	CALL	ClearShift
-      000091 A6 0C            [ 1]  146 	LD	A, #0b00001100; Display On
-      000093 CDr03r88         [ 4]  147 	CALL	PopulateShift
-      000096 CDr03rC0         [ 4]  148 	CALL	SendCommand
-      000099 CDr03r67         [ 4]  149 	CALL	ClearShift
-      00009C A6 06            [ 1]  150 	LD	A, #0b00000110; Entry mode Set
-      00009E CDr03r88         [ 4]  151 	CALL	PopulateShift
-      0000A1 CDr03rC0         [ 4]  152 	CALL	SendCommand
-      0000A4 CDr03r67         [ 4]  153 	CALL	ClearShift
-      0000A7 CDr04r06         [ 4]  154 	CALL	ClearScreen
-      0000AA CDr04r7D         [ 4]  155 	CALL	ResetClk
-      0000AD                        156 Delayloop:
-      0000AD 72 0A 50 0B 24   [ 2]  157 	BTJT	0x500B,#5,Skip ; If pressed changes what mode user is in
-      0000B2 72 03 00 52 1F   [ 2]  158 	BTJF	0x52,#1,Skip
-      0000B7 CDr04r7D         [ 4]  159 	CALL	ResetClk
-      0000BA 3F 54            [ 1]  160 	CLR	0x54 ; Reset Cursor Pos
-      0000BC 72 13 00 52      [ 1]  161 	BRES	0x52,#1
-      0000C0 3C 51            [ 1]  162 	INC	0x51 ; Change Mode If button is hit
-      0000C2 72 11 00 53      [ 1]  163 	BRES	0x53,#0
-      0000C6 72 13 00 53      [ 1]  164 	BRES	0x53,#1
-      0000CA 72 15 00 53      [ 1]  165 	BRES	0x53,#2
-      0000CE B6 51            [ 1]  166 	LD	A,0x51 ; Check what mode user is currently in
-      0000D0 A1 03            [ 1]  167 	CP	A,#3
-      0000D2 26 02            [ 1]  168 	JRNE	Skip ; Overflow to Normal mode
-      0000D4 3F 51            [ 1]  169 	CLR	0x51
-      0000D6                        170 Skip:
-      0000D6 72 01 53 04 D2   [ 2]  171 	BTJF	0x5304, #0, Delayloop ; Wait for a ms
-      0000DB 72 11 53 04      [ 1]  172 	BRES	0x5304, #0 ; Reset UIF
-      0000DF 72 0D 00 53 03   [ 2]  173 	BTJF	0x53,#6,NoBeep
-      0000E4 CDr05r65         [ 4]  174 	CALL	MakeBeep
-      0000E7                        175 NoBeep:
-      0000E7 CDr01rCD         [ 4]  176 	CALL	ClockMode ; Goto Clock Logic
-      0000EA 5A               [ 2]  177 	DECW	X ; Keep track of timing
-      0000EB 27 03            [ 1]  178 	JREQ	EndLoop
-      0000ED CCr00rAD         [ 2]  179 	JP	Delayloop
-      0000F0                        180 EndLoop:
-      0000F0 72 12 00 52      [ 1]  181 	BSET	0x52,#1 ; Second over allow for button presses again
-      0000F4 72 11 53 04      [ 1]  182 	BRES	0x5304, #0 ; Reset UIF
-      0000F8 90 1E 00 53      [ 1]  183 	BCPL	0x53,#7 ; Toggle alm every second
-      0000FC AE 03 E8         [ 2]  184 	LDW	X, #1000 ; Reset timing register
-      0000FF 72 09 00 53 1F   [ 2]  185 	BTJF	0x53,#4,SkipSec ; Skip incrementation if changing clock
-      000104 3C 60            [ 1]  186 	INC	0x60 ; Increment seconds
-      000106 72 02 00 53 06   [ 2]  187 	BTJT	0x53,#1,SkipAdj
-      00010B CDr04r37         [ 4]  188 	CALL	AdjustTime ; Adjust for time overflows
-      00010E CDr01r26         [ 4]  189 	CALL	CheckAlarm
-      000111                        190 SkipAdj:
-      000111 72 07 00 53 0D   [ 2]  191 	BTJF	0x53,#3,SkipSec ; Skip updating display if user is in alarm mode (keeps track in background)
-      000116 CDr03rFA         [ 4]  192 	CALL	Backspace ; Print seconds
-      000119 B6 60            [ 1]  193 	LD	A, 0x60
-      00011B AB 30            [ 1]  194 	ADD	A,#48 ; Adjust to ASCII
-      00011D CDr03r88         [ 4]  195 	CALL	PopulateShift
-      000120 CDr03rDB         [ 4]  196 	CALL	SendLetter
-      000123                        197 SkipSec:
-      000123 CCr00rAD         [ 2]  198 	JP	Delayloop
-      000126                        199 CheckAlarm:
-      000126 72 0B 00 53 1C   [ 2]  200 	BTJF	0x53,#5,ChkDone ; alarm disabled?
-      00012B B6 6B            [ 1]  201 	LD	A,0x6B ; alarm hr high
-      00012D B1 65            [ 1]  202 	CP	A,0x65
-      00012F 26 16            [ 1]  203 	JRNE	ChkDone
-      000131 B6 6A            [ 1]  204 	LD	A,0x6A ; alarm hr low
-      000133 B1 64            [ 1]  205 	CP	A,0x64
-      000135 26 10            [ 1]  206 	JRNE	ChkDone
-      000137 B6 69            [ 1]  207 	LD	A,0x69 ; alarm min high
-      000139 B1 63            [ 1]  208 	CP	A,0x63
-      00013B 26 0A            [ 1]  209 	JRNE	ChkDone
-      00013D B6 68            [ 1]  210 	LD	A,0x68 ; alarm min low
-      00013F B1 62            [ 1]  211 	CP	A,0x62
-      000141 26 04            [ 1]  212 	JRNE	ChkDone
-      000143 72 1C 00 53      [ 1]  213 	BSET	0x53,#6 ; start beeping
-      000147                        214 ChkDone:
-      000147 81               [ 4]  215 	RET
-      000148                        216 RegularMode:
-      000148 3F 56            [ 1]  217 	CLR	0x56
-      00014A 72 16 00 53      [ 1]  218 	BSET	0x53,#3 ; Make sure seconds are being updated
-      00014E 72 18 00 53      [ 1]  219 	BSET	0x53,#4 ; And the clock is ticking
-      000152 72 04 00 53 35   [ 2]  220 	BTJT	0x53,#2,SkipDispUpdReg ; Can I update Display?
-      000157 A6 0C            [ 1]  221 	LD	A, #0b00001100; Update it: (Cursor Off)
-      000159 CDr03r88         [ 4]  222 	CALL	PopulateShift
-      00015C CDr03rC0         [ 4]  223 	CALL	SendCommand
-      00015F CDr03r67         [ 4]  224 	CALL	ClearShift
-      000162 72 14 00 53      [ 1]  225 	BSET	0x53,#2
-      000166 72 11 00 53      [ 1]  226 	BRES	0x53,#0
-      00016A 72 13 00 53      [ 1]  227 	BRES	0x53,#1
-      00016E 72 0B 00 53 0E   [ 2]  228 	BTJF	0x53,#5,NoAlmIcon
-      000173 A6 2A            [ 1]  229 	LD	A,#0x2A
-      000175 CDr03r88         [ 4]  230 	CALL	PopulateShift
-      000178 CDr03rDB         [ 4]  231 	CALL	SendLetter
-      00017B CDr03rFA         [ 4]  232 	CALL	Backspace
-      00017E CCr01r8C         [ 2]  233 	JP	SkipDispUpdReg
-      000181                        234 NoAlmIcon:
-      000181 A6 20            [ 1]  235 	LD	A,#0x20
-      000183 CDr03r88         [ 4]  236 	CALL	PopulateShift
-      000186 CDr03rDB         [ 4]  237 	CALL	SendLetter
-      000189 CDr03rFA         [ 4]  238 	CALL	Backspace
-      00018C                        239 SkipDispUpdReg:
-      00018C 72 0E 50 0B 25   [ 2]  240 	BTJT	0x500B,#7, SkipAlmToggle
-      000191 72 03 00 52 20   [ 2]  241 	BTJF	0x52,#1, SkipAlmToggle
-      000196 72 13 00 52      [ 1]  242 	BRES	0x52,#1
-      00019A 90 1A 00 53      [ 1]  243 	BCPL	0x53,#5 ; Toggle Alarm
-      00019E 72 0A 00 53 0B   [ 2]  244 	BTJT	0x53,#5, EnableAlm
-      0001A3                        245 DisableAlm:
-      0001A3 72 1B 00 53      [ 1]  246 	BRES	0x53,#5
-      0001A7 72 15 00 53      [ 1]  247 	BRES	0x53,#2
-      0001AB CCr01rB6         [ 2]  248 	JP	SkipAlmToggle
-      0001AE                        249 EnableAlm:
-      0001AE 72 1A 00 53      [ 1]  250 	BSET	0x53,#5
-      0001B2 72 15 00 53      [ 1]  251 	BRES	0x53,#2
-      0001B6                        252 SkipAlmToggle:
-      0001B6 72 0C 50 0B 11   [ 2]  253 	BTJT	0x500B,#6, SkipSnooze
-      0001BB 72 03 00 52 0C   [ 2]  254 	BTJF	0x52,#1, SkipSnooze
-      0001C0 72 13 00 52      [ 1]  255 	BRES	0x52,#1
-      0001C4 72 1D 00 53      [ 1]  256 	BRES	0x53,#6 ;Snooze alarm
-      0001C8 72 1F 00 53      [ 1]  257 	BRES	0x53,#7
-      0001CC                        258 SkipSnooze:
-      0001CC 81               [ 4]  259 	RET
-      0001CD                        260 ClockMode:
-      0001CD 72 00 00 51 08   [ 2]  261 	BTJT	0x51,#0,AlarmSet
-      0001D2 72 02 00 51 40   [ 2]  262 	BTJT	0x51,#1,ClockSet
-      0001D7 CCr01r48         [ 2]  263 	JP	RegularMode
-      0001DA                        264 AlarmSet:
-      0001DA 72 17 00 53      [ 1]  265 	BRES	0x53,#3
-      0001DE 72 19 00 53      [ 1]  266 	BRES	0x53,#4
-      0001E2 72 02 00 53 2C   [ 2]  267 	BTJT	0x53,#1,SkipDispUpdAlm
-      0001E7 CDr04rF1         [ 4]  268 	CALL	DispAlarm
-      0001EA A6 0E            [ 1]  269 	LD	A, #0b00001110; Cursor On
-      0001EC CDr03r88         [ 4]  270 	CALL	PopulateShift
-      0001EF CDr03rC0         [ 4]  271 	CALL	SendCommand
-      0001F2 CDr03r67         [ 4]  272 	CALL	ClearShift
-      0001F5 72 11 00 53      [ 1]  273 	BRES	0x53,#0 ; Set mode to alarm
-      0001F9 72 15 00 53      [ 1]  274 	BRES	0x53,#2
-      0001FD 72 12 00 53      [ 1]  275 	BSET	0x53,#1
-      000201 A6 41            [ 1]  276 	LD	A,#0x41
-      000203 CDr03r88         [ 4]  277 	CALL	PopulateShift
-      000206 CDr03rDB         [ 4]  278 	CALL	SendLetter
-      000209 CDr03rFA         [ 4]  279 	CALL	Backspace
-      00020C CDr04r1E         [ 4]  280 	CALL	ReturnHome
-      00020F 3F 54            [ 1]  281 	CLR	0x54
-      000211 3F 55            [ 1]  282 	CLR	0x55
-      000213                        283 SkipDispUpdAlm:
-      000213 CDr02rDC         [ 4]  284 	CALL	AlarmSetLogic
-      000216 81               [ 4]  285 	RET
-      000217                        286 ClockSet:
-      000217 3F 56            [ 1]  287 	CLR	0x56
-      000219 89               [ 2]  288 	PUSHW	X
-      00021A 72 17 00 53      [ 1]  289 	BRES	0x53,#3
-      00021E 72 19 00 53      [ 1]  290 	BRES	0x53,#4
-      000222 72 00 00 53 29   [ 2]  291 	BTJT	0x53,#0,SkipDispUpdClk
-      000227 A6 0E            [ 1]  292 	LD	A, #0b00001110
-      000229 CDr03r88         [ 4]  293 	CALL	PopulateShift
-      00022C CDr03rC0         [ 4]  294 	CALL	SendCommand
-      00022F CDr03r67         [ 4]  295 	CALL	ClearShift
-      000232 72 13 00 53      [ 1]  296 	BRES	0x53,#1
-      000236 72 15 00 53      [ 1]  297 	BRES	0x53,#2
-      00023A 72 10 00 53      [ 1]  298 	BSET	0x53,#0
-      00023E A6 43            [ 1]  299 	LD	A,#0x43
-      000240 CDr03r88         [ 4]  300 	CALL	PopulateShift
-      000243 CDr03rDB         [ 4]  301 	CALL	SendLetter
-      000246 CDr03rFA         [ 4]  302 	CALL	Backspace
-      000249 CDr04r1E         [ 4]  303 	CALL	ReturnHome
-      00024C 3F 54            [ 1]  304 	CLR	0x54
-      00024E 3F 55            [ 1]  305 	CLR	0x55
-      000250                        306 SkipDispUpdClk:
-      000250 72 0E 50 0B 33   [ 2]  307 	BTJT	0x500B,#7,SkipClkMov
-      000255 72 03 00 52 2E   [ 2]  308 	BTJF	0x52,#1,SkipClkMov
-      00025A 72 13 00 52      [ 1]  309 	BRES	0x52,#1
-      00025E 3C 54            [ 1]  310 	INC	0x54
-      000260 3C 55            [ 1]  311 	INC	0x55
-      000262 B6 54            [ 1]  312 	LD	A,0x54
-      000264 A1 02            [ 1]  313 	CP	A,#2
-      000266 27 0B            [ 1]  314 	JREQ	MovTwo
-      000268 A1 05            [ 1]  315 	CP	A,#5
-      00026A 27 07            [ 1]  316 	JREQ	MovTwo
-      00026C A1 08            [ 1]  317 	CP	A,#8
-      00026E 27 0E            [ 1]  318 	JREQ	ToStart
-      000270 CCr02r78         [ 2]  319 	JP	MovOne
-      000273                        320 MovTwo:
-      000273 CDr04r12         [ 4]  321 	CALL	MovRight
-      000276 3C 54            [ 1]  322 	INC	0x54
-      000278                        323 MovOne:
-      000278 CDr04r12         [ 4]  324 	CALL	MovRight
-      00027B CCr02r88         [ 2]  325 	JP	SkipClkMov
-      00027E                        326 ToStart:
-      00027E 3F 54            [ 1]  327 	CLR	0x54
-      000280 3F 55            [ 1]  328 	CLR	0x55
-      000282 CDr04r12         [ 4]  329 	CALL	MovRight
-      000285 CDr04r1E         [ 4]  330 	CALL	ReturnHome
-      000288                        331 SkipClkMov:
-      000288 72 0C 50 0B 4D   [ 2]  332 	BTJT	0x500B,#6,SkipClkInc
-      00028D 72 03 00 52 48   [ 2]  333 	BTJF	0x52,#1,SkipClkInc
-      000292 72 13 00 52      [ 1]  334 	BRES	0x52,#1
-      000296 A6 05            [ 1]  335 	LD	A, #5
-      000298 B0 55            [ 1]  336 	SUB	A, 0x55
-      00029A 5F               [ 1]  337 	CLRW	X
-      00029B 41               [ 1]  338 	EXG	A,XL
-      00029C 6C 60            [ 1]  339 	INC	(0x60,X)
-      00029E B6 55            [ 1]  340 	LD	A, 0x55
-      0002A0 A1 00            [ 1]  341 	CP	A,#0
-      0002A2 27 1E            [ 1]  342 	JREQ	AdjTwo
-      0002A4 A1 02            [ 1]  343 	CP	A,#2
-      0002A6 27 0F            [ 1]  344 	JREQ	AdjSix
-      0002A8 A1 04            [ 1]  345 	CP	A,#4
-      0002AA 27 0B            [ 1]  346 	JREQ	AdjSix
-      0002AC E6 60            [ 1]  347 	LD	A,(0x60,X)
-      0002AE A1 0A            [ 1]  348 	CP	A,#10
-      0002B0 26 18            [ 1]  349 	JRNE	PrintVal
-      0002B2 6F 60            [ 1]  350 	CLR	(0x60,X)
-      0002B4 CCr02rCA         [ 2]  351 	JP	PrintVal
-      0002B7                        352 AdjSix:
-      0002B7 E6 60            [ 1]  353 	LD	A,(0x60,X)
-      0002B9 A1 06            [ 1]  354 	CP	A,#6
-      0002BB 26 0D            [ 1]  355 	JRNE	PrintVal
-      0002BD 6F 60            [ 1]  356 	CLR	(0x60,X)
-      0002BF CCr02rCA         [ 2]  357 	JP	PrintVal
-      0002C2                        358 AdjTwo:
-      0002C2 E6 60            [ 1]  359 	LD	A,(0x60,X)
-      0002C4 A1 03            [ 1]  360 	CP	A,#3
-      0002C6 26 02            [ 1]  361 	JRNE	PrintVal
-      0002C8 6F 60            [ 1]  362 	CLR	(0x60,X)
-      0002CA                        363 PrintVal:
-      0002CA E6 60            [ 1]  364 	LD	A,(0x60,X)
-      0002CC AB 30            [ 1]  365 	ADD	A,#48 ; Adjust to ASCII
-      0002CE CDr03r88         [ 4]  366 	CALL	PopulateShift
-      0002D1 CDr03rDB         [ 4]  367 	CALL	SendLetter
-      0002D4 CDr03rFA         [ 4]  368 	CALL	Backspace
-      0002D7 CDr03r67         [ 4]  369 	CALL	ClearShift
-      0002DA                        370 SkipClkInc:
-      0002DA 85               [ 2]  371 	POPW	X
-      0002DB 81               [ 4]  372 	RET
-      0002DC                        373 AlarmSetLogic:
-      0002DC 89               [ 2]  374 	PUSHW	X
-      0002DD 72 0E 50 0B 33   [ 2]  375 	BTJT	0x500B,#7,SkipAlmMov ; Is move button pressed?
-      0002E2 72 03 00 52 2E   [ 2]  376 	BTJF	0x52,#1,SkipAlmMov
-      0002E7 72 13 00 52      [ 1]  377 	BRES	0x52,#1
-      0002EB 3C 56            [ 1]  378 	INC	0x56 ; Inc cursor position
-      0002ED 3C 57            [ 1]  379 	INC	0x57 ; inc number index
-      0002EF B6 56            [ 1]  380 	LD	A,0x56
-      0002F1 A1 02            [ 1]  381 	CP	A,#2 ; Is Colon?
-      0002F3 27 0B            [ 1]  382 	JREQ	MovTwoAlm ; Yes Move Two
-      0002F5 A1 05            [ 1]  383 	CP	A,#5 ; Is Colon?
-      0002F7 27 07            [ 1]  384 	JREQ	MovTwoAlm ; Yes Move Two
-      0002F9 A1 08            [ 1]  385 	CP	A,#8 ; Is at end?
-      0002FB 27 0E            [ 1]  386 	JREQ	ToStartAlm ; Yes reset Cursor
-      0002FD CCr03r05         [ 2]  387 	JP	MovOneAlm ; Else move cursor Regularly
-      000300                        388 MovTwoAlm:
-      000300 CDr04r12         [ 4]  389 	CALL	MovRight
-      000303 3C 56            [ 1]  390 	INC	0x56
-      000305                        391 MovOneAlm:
-      000305 CDr04r12         [ 4]  392 	CALL	MovRight
-      000308 CCr03r15         [ 2]  393 	JP	SkipAlmMov
-      00030B                        394 ToStartAlm:
-      00030B 3F 56            [ 1]  395 	CLR	0x56
-      00030D 3F 57            [ 1]  396 	CLR	0x57
-      00030F CDr04r12         [ 4]  397 	CALL	MovRight ; Adjust to correct position before moving home
-      000312 CDr04r1E         [ 4]  398 	CALL	ReturnHome
-      000315                        399 SkipAlmMov:
-      000315 72 0C 50 0B 4B   [ 2]  400 	BTJT	0x500B,#6,SkipAlmInc ; Is increment button pressed?
-      00031A 72 03 00 52 46   [ 2]  401 	BTJF	0x52,#1,SkipAlmInc
-      00031F 72 13 00 52      [ 1]  402 	BRES	0x52,#1
-      000323 B6 57            [ 1]  403 	LD	A, 0x57
-                                    404 ;SUB	A, 0x57 ; Adjust for registers being revesed from inx. (Hrs->sec vs sec->hrs) ** Try uncommenting this
-      000325 5F               [ 1]  405 	CLRW	X
-      000326 41               [ 1]  406 	EXG	A,XL
-      000327 6C 66            [ 1]  407 	INC	(0x66,X) ; Adjust each alarm register
-      000329 B6 57            [ 1]  408 	LD	A, 0x57 ; Below just checks for overflow
-      00032B A1 00            [ 1]  409 	CP	A,#0
-      00032D 27 1E            [ 1]  410 	JREQ	AdjTwoAlm
-      00032F A1 02            [ 1]  411 	CP	A,#2
-      000331 27 0F            [ 1]  412 	JREQ	AdjSixAlm
-      000333 A1 04            [ 1]  413 	CP	A,#4
-      000335 27 0B            [ 1]  414 	JREQ	AdjSixAlm
-      000337 E6 66            [ 1]  415 	LD	A,(0x66,X)
-      000339 A1 0A            [ 1]  416 	CP	A,#10
-      00033B 26 18            [ 1]  417 	JRNE	PrintValAlm
-      00033D 6F 66            [ 1]  418 	CLR	(0x66,X)
-      00033F CCr03r55         [ 2]  419 	JP	PrintValAlm
-      000342                        420 AdjSixAlm:
-      000342 E6 66            [ 1]  421 	LD	A,(0x66,X)
-      000344 A1 06            [ 1]  422 	CP	A,#6
-      000346 26 0D            [ 1]  423 	JRNE	PrintValAlm
-      000348 6F 66            [ 1]  424 	CLR	(0x66,X)
-      00034A CCr03r55         [ 2]  425 	JP	PrintValAlm
-      00034D                        426 AdjTwoAlm:
-      00034D E6 66            [ 1]  427 	LD	A,(0x66,X)
-      00034F A1 03            [ 1]  428 	CP	A,#3
-      000351 26 02            [ 1]  429 	JRNE	PrintValAlm
-      000353 6F 66            [ 1]  430 	CLR	(0x66,X)
-      000355                        431 PrintValAlm:
-                                    432 ; Throw new value to display
-      000355 E6 66            [ 1]  433 	LD	A,(0x66,X)
-      000357 AB 30            [ 1]  434 	ADD	A,#48 ; Adjust to ASCII
-      000359 CDr03r88         [ 4]  435 	CALL	PopulateShift
-      00035C CDr03rDB         [ 4]  436 	CALL	SendLetter
-      00035F CDr03rFA         [ 4]  437 	CALL	Backspace
-      000362 CDr03r67         [ 4]  438 	CALL	ClearShift
-      000365                        439 SkipAlmInc:
-      000365 85               [ 2]  440 	POPW	X
-      000366 81               [ 4]  441 	RET
-                                    442 ;	Clears the shift register
-      000367                        443 ClearShift:
-      000367 88               [ 1]  444 	PUSH	A
-      000368 A6 08            [ 1]  445 	LD	A,#8
-      00036A 72 13 50 0F      [ 1]  446 	BRES	0x500F, #1
-      00036E                        447 ClearLoop:
-      00036E 72 16 50 0F      [ 1]  448 	BSET	0x500F, #3
-      000372 9D               [ 1]  449 	NOP
-      000373 72 17 50 0F      [ 1]  450 	BRES	0x500F, #3
-      000377 4A               [ 1]  451 	DEC	A
-      000378 27 03            [ 1]  452 	JREQ	ClearDone
-      00037A CCr03r6E         [ 2]  453 	JP	ClearLoop
-      00037D                        454 ClearDone:
-      00037D 72 14 50 0F      [ 1]  455 	BSET	0x500F, #2
-      000381 9D               [ 1]  456 	NOP
-      000382 72 15 50 0F      [ 1]  457 	BRES	0x500F, #2
-      000386 84               [ 1]  458 	POP	A
-      000387 81               [ 4]  459 	RET
-                                    460 ;	Populates shift register with value in A
-      000388                        461 PopulateShift:
-      000388 CDr05r74         [ 4]  462 	CALL	DumbDelay
-      00038B 89               [ 2]  463 	PUSHW	X
-      00038C B7 50            [ 1]  464 	LD	0x50, A
-      00038E AE 00 08         [ 2]  465 	LDW	X,#8
-      000391                        466 PopLoop:
-      000391 27 22            [ 1]  467 	JREQ	PopDone
-      000393 72 0E 00 50 03   [ 2]  468 	BTJT	0x50,#7,ShiftO
-      000398 CCr03rA2         [ 2]  469 	JP	ShiftZ
-      00039B                        470 ShiftO:
-      00039B 72 12 50 0F      [ 1]  471 	BSET	0x500F, #1
-      00039F CCr03rA6         [ 2]  472 	JP	PulseClk
-      0003A2                        473 ShiftZ:
-      0003A2 72 13 50 0F      [ 1]  474 	BRES	0x500F, #1
-      0003A6                        475 PulseClk:
-      0003A6 72 16 50 0F      [ 1]  476 	BSET	0x500F, #3
-      0003AA 9D               [ 1]  477 	NOP
-      0003AB 72 17 50 0F      [ 1]  478 	BRES	0x500F, #3
-      0003AF 38 50            [ 1]  479 	SLL	0x50
-      0003B1 5A               [ 2]  480 	DECW	X
-      0003B2 CCr03r91         [ 2]  481 	JP	PopLoop
-      0003B5                        482 PopDone:
-      0003B5 72 14 50 0F      [ 1]  483 	BSET	0x500F, #2
-      0003B9 9D               [ 1]  484 	NOP
-      0003BA 72 15 50 0F      [ 1]  485 	BRES	0x500F, #2
-      0003BE 85               [ 2]  486 	POPW	X
-      0003BF 81               [ 4]  487 	ret
-      0003C0                        488 SendCommand:
-      0003C0 72 1B 50 0F      [ 1]  489 	BRES	0x500F, #5 ; Clear RS
-      0003C4 72 1D 50 0F      [ 1]  490 	BRES	0x500F, #6 ; Clear E
-      0003C8 72 1C 50 0F      [ 1]  491 	BSET	0x500F, #6 ; Set E to send instruction
-      0003CC 9D               [ 1]  492 	NOP
-      0003CD 9D               [ 1]  493 	NOP
-      0003CE 9D               [ 1]  494 	NOP
-      0003CF 72 1D 50 0F      [ 1]  495 	BRES	0x500F, #6 ; Clear E
-      0003D3 9D               [ 1]  496 	NOP
-      0003D4 9D               [ 1]  497 	NOP
-      0003D5 9D               [ 1]  498 	NOP	; Little delay
-      0003D6 72 1B 50 0F      [ 1]  499 	BRES	0x500F, #5 ; Clear RS
-      0003DA 81               [ 4]  500 	RET
-      0003DB                        501 SendLetter:
-      0003DB 72 1B 50 0F      [ 1]  502 	BRES	0x500F, #5 ; Clear RS
-      0003DF 72 1D 50 0F      [ 1]  503 	BRES	0x500F, #6 ; Clear E
-      0003E3 72 1C 50 0F      [ 1]  504 	BSET	0x500F, #6 ; Set E to send instruction
-      0003E7 72 1A 50 0F      [ 1]  505 	BSET	0x500F, #5 ; Set RS
-      0003EB 9D               [ 1]  506 	NOP
-      0003EC 9D               [ 1]  507 	NOP
-      0003ED 9D               [ 1]  508 	NOP
-      0003EE 72 1D 50 0F      [ 1]  509 	BRES	0x500F, #6 ; Clear E
-      0003F2 9D               [ 1]  510 	NOP
-      0003F3 9D               [ 1]  511 	NOP
-      0003F4 9D               [ 1]  512 	NOP
-      0003F5 72 1B 50 0F      [ 1]  513 	BRES	0x500F, #5 ; Clear RS
-      0003F9 81               [ 4]  514 	RET
-      0003FA                        515 Backspace:
-      0003FA CDr03r67         [ 4]  516 	CALL	ClearShift
-      0003FD A6 10            [ 1]  517 	LD	A, #0b00010000; Shift cursor left
-      0003FF CDr03r88         [ 4]  518 	CALL	PopulateShift
-      000402 CDr03rC0         [ 4]  519 	CALL	SendCommand
-      000405 81               [ 4]  520 	RET
-      000406                        521 ClearScreen:
-      000406 A6 01            [ 1]  522 	LD	A, #1 ; Clear Display
-      000408 CDr03r88         [ 4]  523 	CALL	PopulateShift
-      00040B CDr03rC0         [ 4]  524 	CALL	SendCommand
-      00040E CDr03r67         [ 4]  525 	CALL	ClearShift
-      000411 81               [ 4]  526 	RET
-      000412                        527 MovRight:
-      000412 CDr03r67         [ 4]  528 	CALL	ClearShift
-      000415 A6 14            [ 1]  529 	LD	A, #0b00010100
-      000417 CDr03r88         [ 4]  530 	CALL	PopulateShift
-      00041A CDr03rC0         [ 4]  531 	CALL	SendCommand
-      00041D 81               [ 4]  532 	RET
-      00041E                        533 ReturnHome:
-      00041E CDr03rFA         [ 4]  534 	CALL	Backspace
-      000421 CDr03rFA         [ 4]  535 	CALL	Backspace
-      000424 CDr03rFA         [ 4]  536 	CALL	Backspace
-      000427 CDr03rFA         [ 4]  537 	CALL	Backspace
-      00042A CDr03rFA         [ 4]  538 	CALL	Backspace
-      00042D CDr03rFA         [ 4]  539 	CALL	Backspace
-      000430 CDr03rFA         [ 4]  540 	CALL	Backspace
-      000433 CDr03rFA         [ 4]  541 	CALL	Backspace
-      000436 81               [ 4]  542 	RET
-      000437                        543 AdjustTime:
-      000437 B6 60            [ 1]  544 	LD	A,0x60
-      000439 A1 0A            [ 1]  545 	CP	A,#10
-      00043B 26 3F            [ 1]  546 	JRNE	AdjTimeDoneSec
-      00043D                        547 SecLowOv:
-      00043D 3C 61            [ 1]  548 	INC	0x61
-      00043F B6 61            [ 1]  549 	LD	A,0x61
-      000441 3F 60            [ 1]  550 	CLR	0x60
-      000443 A1 06            [ 1]  551 	CP	A,#6
-      000445 26 31            [ 1]  552 	JRNE	AdjTimeDone
-      000447                        553 SecHighOver:
-      000447 3C 62            [ 1]  554 	INC	0x62
-      000449 B6 62            [ 1]  555 	LD	A,0x62
-      00044B 3F 61            [ 1]  556 	CLR	0x61
-      00044D A1 0A            [ 1]  557 	CP	A,#10
-      00044F 26 27            [ 1]  558 	JRNE	AdjTimeDone
-      000451                        559 MinLowOver:
-      000451 3C 63            [ 1]  560 	INC	0x63
-      000453 B6 63            [ 1]  561 	LD	A,0x63
-      000455 3F 62            [ 1]  562 	CLR	0x62
-      000457 A1 06            [ 1]  563 	CP	A,#6
-      000459 26 1D            [ 1]  564 	JRNE	AdjTimeDone
-      00045B                        565 MinHighOver:
-      00045B 3C 64            [ 1]  566 	INC	0x64
-      00045D 3F 63            [ 1]  567 	CLR	0x63
-      00045F A1 0A            [ 1]  568 	CP	A,#10
-      000461 B6 65            [ 1]  569 	LD	A,0x65
-      000463 A1 02            [ 1]  570 	CP	A,#2
-      000465 27 09            [ 1]  571 	JREQ	DayDone
-      000467 26 0F            [ 1]  572 	JRNE	AdjTimeDone
-      000469                        573 HrLowOver:
-      000469 3C 65            [ 1]  574 	INC	0x65
-      00046B 3F 64            [ 1]  575 	CLR	0x64
-      00046D CCr04r78         [ 2]  576 	JP	AdjTimeDone
-      000470                        577 DayDone:
-      000470 B6 64            [ 1]  578 	LD	A,0x64
-      000472 A1 04            [ 1]  579 	CP	A,#4
-      000474 3F 65            [ 1]  580 	CLR	0x65
-      000476 3F 64            [ 1]  581 	CLR	0x64
-      000478                        582 AdjTimeDone:
-      000478 CDr04r7D         [ 4]  583 	CALL	ResetClk
-      00047B 81               [ 4]  584 	RET
-      00047C                        585 AdjTimeDoneSec:
-      00047C 81               [ 4]  586 	RET
-      00047D                        587 ResetClk:
-      00047D CDr04r06         [ 4]  588 	CALL	ClearScreen
-      000480 B6 65            [ 1]  589 	LD	A, 0x65
-      000482 AB 30            [ 1]  590 	ADD	A,#48 ; Adjust to ASCII
-      000484 CDr03r88         [ 4]  591 	CALL	PopulateShift
-      000487 CDr03rDB         [ 4]  592 	CALL	SendLetter
-      00048A CDr03r67         [ 4]  593 	CALL	ClearShift
-      00048D B6 64            [ 1]  594 	LD	A, 0x64
-      00048F AB 30            [ 1]  595 	ADD	A,#48 ; Adjust to ASCII
-      000491 CDr03r88         [ 4]  596 	CALL	PopulateShift
-      000494 CDr03rDB         [ 4]  597 	CALL	SendLetter
-      000497 CDr03r67         [ 4]  598 	CALL	ClearShift
-      00049A A6 3A            [ 1]  599 	LD	A,#0x3A
-      00049C CDr03r88         [ 4]  600 	CALL	PopulateShift
-      00049F CDr03rDB         [ 4]  601 	CALL	SendLetter
-      0004A2 CDr03r67         [ 4]  602 	CALL	ClearShift
-      0004A5 B6 63            [ 1]  603 	LD	A, 0x63
-      0004A7 AB 30            [ 1]  604 	ADD	A,#48 ; Adjust to ASCII
-      0004A9 CDr03r88         [ 4]  605 	CALL	PopulateShift
-      0004AC CDr03rDB         [ 4]  606 	CALL	SendLetter
-      0004AF CDr03r67         [ 4]  607 	CALL	ClearShift
-      0004B2 B6 62            [ 1]  608 	LD	A, 0x62
-      0004B4 AB 30            [ 1]  609 	ADD	A,#48 ; Adjust to ASCII
-      0004B6 CDr03r88         [ 4]  610 	CALL	PopulateShift
-      0004B9 CDr03rDB         [ 4]  611 	CALL	SendLetter
-      0004BC CDr03r67         [ 4]  612 	CALL	ClearShift
-      0004BF A6 3A            [ 1]  613 	LD	A,#0x3A
-      0004C1 CDr03r88         [ 4]  614 	CALL	PopulateShift
-      0004C4 CDr03rDB         [ 4]  615 	CALL	SendLetter
-      0004C7 CDr03r67         [ 4]  616 	CALL	ClearShift
-      0004CA B6 61            [ 1]  617 	LD	A, 0x61
-      0004CC AB 30            [ 1]  618 	ADD	A,#48 ; Adjust to ASCII
-      0004CE CDr03r88         [ 4]  619 	CALL	PopulateShift
-      0004D1 CDr03rDB         [ 4]  620 	CALL	SendLetter
-      0004D4 CDr03r67         [ 4]  621 	CALL	ClearShift
-      0004D7 B6 60            [ 1]  622 	LD	A, 0x60
-      0004D9 AB 30            [ 1]  623 	ADD	A,#48 ; Adjust to ASCII
-      0004DB CDr03r88         [ 4]  624 	CALL	PopulateShift
-      0004DE CDr03rDB         [ 4]  625 	CALL	SendLetter
-      0004E1 CDr03r67         [ 4]  626 	CALL	ClearShift
-      0004E4 72 11 00 53      [ 1]  627 	BRES	0x53,#0
-      0004E8 72 13 00 53      [ 1]  628 	BRES	0x53,#1
-      0004EC 72 15 00 53      [ 1]  629 	BRES	0x53,#2
-                                    630 ;CALL	ClockMode
-      0004F0 81               [ 4]  631 	RET
-      0004F1                        632 DispAlarm:
-      0004F1 CDr04r06         [ 4]  633 	CALL	ClearScreen
-      0004F4 B6 66            [ 1]  634 	LD	A, 0x66
-      0004F6 AB 30            [ 1]  635 	ADD	A,#48 ; Adjust to ASCII
-      0004F8 CDr03r88         [ 4]  636 	CALL	PopulateShift
-      0004FB CDr03rDB         [ 4]  637 	CALL	SendLetter
-      0004FE CDr03r67         [ 4]  638 	CALL	ClearShift
-      000501 B6 67            [ 1]  639 	LD	A, 0x67
-      000503 AB 30            [ 1]  640 	ADD	A,#48 ; Adjust to ASCII
-      000505 CDr03r88         [ 4]  641 	CALL	PopulateShift
-      000508 CDr03rDB         [ 4]  642 	CALL	SendLetter
-      00050B CDr03r67         [ 4]  643 	CALL	ClearShift
-      00050E A6 3A            [ 1]  644 	LD	A,#0x3A
-      000510 CDr03r88         [ 4]  645 	CALL	PopulateShift
-      000513 CDr03rDB         [ 4]  646 	CALL	SendLetter
-      000516 CDr03r67         [ 4]  647 	CALL	ClearShift
-      000519 B6 68            [ 1]  648 	LD	A, 0x68
-      00051B AB 30            [ 1]  649 	ADD	A,#48 ; Adjust to ASCII
-      00051D CDr03r88         [ 4]  650 	CALL	PopulateShift
-      000520 CDr03rDB         [ 4]  651 	CALL	SendLetter
-      000523 CDr03r67         [ 4]  652 	CALL	ClearShift
-      000526 B6 69            [ 1]  653 	LD	A, 0x69
-      000528 AB 30            [ 1]  654 	ADD	A,#48 ; Adjust to ASCII
-      00052A CDr03r88         [ 4]  655 	CALL	PopulateShift
-      00052D CDr03rDB         [ 4]  656 	CALL	SendLetter
-      000530 CDr03r67         [ 4]  657 	CALL	ClearShift
-      000533 A6 3A            [ 1]  658 	LD	A,#0x3A
-      000535 CDr03r88         [ 4]  659 	CALL	PopulateShift
-      000538 CDr03rDB         [ 4]  660 	CALL	SendLetter
-      00053B CDr03r67         [ 4]  661 	CALL	ClearShift
-      00053E B6 6A            [ 1]  662 	LD	A, 0x6A
-      000540 AB 30            [ 1]  663 	ADD	A,#48 ; Adjust to ASCII
-      000542 CDr03r88         [ 4]  664 	CALL	PopulateShift
-      000545 CDr03rDB         [ 4]  665 	CALL	SendLetter
-      000548 CDr03r67         [ 4]  666 	CALL	ClearShift
-      00054B B6 6B            [ 1]  667 	LD	A, 0x6B
-      00054D AB 30            [ 1]  668 	ADD	A,#48 ; Adjust to ASCII
-      00054F CDr03r88         [ 4]  669 	CALL	PopulateShift
-      000552 CDr03rDB         [ 4]  670 	CALL	SendLetter
-      000555 CDr03r67         [ 4]  671 	CALL	ClearShift
-      000558 72 11 00 53      [ 1]  672 	BRES	0x53,#0
-      00055C 72 13 00 53      [ 1]  673 	BRES	0x53,#1
-      000560 72 15 00 53      [ 1]  674 	BRES	0x53,#2
-                                    675 ;CALL	ClockMode
-      000564 81               [ 4]  676 	RET
-      000565                        677 MakeBeep:
-      000565 72 0F 00 53 05   [ 2]  678 	BTJF	0x53,#7,SkipBeep
-      00056A 90 18 50 0F      [ 1]  679 	BCPL	0x500F, #4 ; Toggle Port D, Pin 4 (Creates 500Hz Tone)
-      00056E 81               [ 4]  680 	RET
-      00056F                        681 SkipBeep:
-      00056F 72 19 50 0F      [ 1]  682 	BRES	0x500F,#4
-      000573 81               [ 4]  683 	RET
-      000574                        684 DumbDelay:
-      000574 89               [ 2]  685 	PUSHW	X
-      000575 AE FF FF         [ 2]  686 	LDW	X, #0xFFFF
-      000578                        687 DumbLoop:
-      000578 5A               [ 2]  688 	DECW	X
-      000579 27 03            [ 1]  689 	JREQ	DumbDone
-      00057B CCr05r78         [ 2]  690 	JP	DumbLoop
-      00057E                        691 DumbDone:
-      00057E 85               [ 2]  692 	POPW	X
-      00057F 81               [ 4]  693 	RET
-                                    694 ;	main.c: 696: }
-      000580 81               [ 4]  695 	ret
-                                    696 	.area CODE
-                                    697 	.area CONST
-                                    698 	.area INITIALIZER
-                                    699 	.area CABS (ABS)
+                                     85 	.area HOME
+                                     86 	.area HOME
+      000018                         87 __sdcc_program_startup:
+      000018 CCr00r16         [ 2]   88 	jp	_main
+                                     89 ;	return from main will return to caller
+                                     90 ;--------------------------------------------------------
+                                     91 ; code
+                                     92 ;--------------------------------------------------------
+                                     93 	.area CODE
+                                     94 ;	main.c: 43: void rtc_isr (void) __interrupt(3){
+                                     95 ;	-----------------------------------------
+                                     96 ;	 function rtc_isr
+                                     97 ;	-----------------------------------------
+      000000                         98 _rtc_isr:
+      000000 4F               [ 1]   99 	clr	a
+      000001 62               [ 2]  100 	div	x, a
+                                    101 ;	main.c: 51: __endasm;
+      000002 C6 50 01         [ 1]  102 	LD	A, 0x5001
+      000005 72 02 00 70 0B   [ 2]  103 	BTJT	0x70,#1, NoSecUpd
+      00000A 72 09 00 53 06   [ 2]  104 	BTJF	0x53,#4,NoSecUpd; Skip incrementation if changing clock
+      00000F 3C 60            [ 1]  105 	INC	0x60
+      000011 72 12 00 70      [ 1]  106 	BSET	0x70,#1 ; Debounce
+      000015                        107 NoSecUpd:
+                                    108 ;	main.c: 52: }
+      000015 80               [11]  109 	iret
+                                    110 ;	main.c: 55: void main(void){
+                                    111 ;	-----------------------------------------
+                                    112 ;	 function main
+                                    113 ;	-----------------------------------------
+      000016                        114 _main:
+                                    115 ;	main.c: 754: __endasm;
+      000016                        116 Setup:
+                                    117 ;	Misc Variables
+      000016 3F 51            [ 1]  118 	CLR	0x51 ; Regular Mode = 0, AlarmSet = 1, TimeSet = 2;
+      000018 3F 70            [ 1]  119 	CLR	0x70 ; SWQ FLAG
+      00001A 72 12 00 52      [ 1]  120 	BSET	0x52,#1 ; Allows button pressses to be registered. Cleared when button pressed, set every second
+      00001E 72 14 00 52      [ 1]  121 	BSET	0x52,#2 ; Doubles debounce cuz yeah
+      000022 3F 53            [ 1]  122 	CLR	0x53 ; BeeperOn|AlmGoing|AlmSet|Count|UpdateSec|R Disp|A Disp|C Disp|
+      000024 72 16 00 53      [ 1]  123 	BSET	0x53,#3 ; UpdateSec Enabled on start
+      000028 72 18 00 53      [ 1]  124 	BSET	0x53,#4 ; Count Enabled on start
+      00002C 72 1A 00 53      [ 1]  125 	BSET	0x53,#5 ; Alm Enabled on start
+      000030 72 1D 00 53      [ 1]  126 	BRES	0x53,#6 ; Beeper not on
+      000034 3F 54            [ 1]  127 	CLR	0x54 ; Used toAlm hold cursor position on clk change
+      000036 3F 55            [ 1]  128 	CLR	0x55 ; Index to hold what number to increment
+      000038 3F 56            [ 1]  129 	CLR	0x56 ; Used toAlm hold cursor position on clk change
+      00003A 3F 57            [ 1]  130 	CLR	0x57 ; Index to hold what number to increment
+                                    131 ;	Timer setup
+      00003C 35 00 50 C6      [ 1]  132 	MOV	0x50C6, #0x00 ; Set clock to 16mhz
+      000040 35 10 52 50      [ 1]  133 	MOV	0x5250, #0b00010000 ; Set clock registers
+      000044 35 00 52 60      [ 1]  134 	MOV	0x5260, #0x00 ; Dont divide clock
+      000048 35 0F 52 61      [ 1]  135 	MOV	0x5261, #0x0F ; Dont divide clock
+      00004C 35 4E 52 62      [ 1]  136 	MOV	0x5262, #0x4E ; ARRH
+      000050 35 20 52 63      [ 1]  137 	MOV	0x5263, #0x20; ARRL
+      000054 35 00 14 B4      [ 1]  138 	MOV	5300, #0x00; Set clock registers
+      000058 35 04 53 0E      [ 1]  139 	MOV	0x530E, #0x04
+      00005C 35 03 53 0F      [ 1]  140 	MOV	0x530F, #0x03 ; ARRH
+      000060 35 E8 53 10      [ 1]  141 	MOV	0x5310, #0xE8 ; ARRL
+      000064 72 11 53 04      [ 1]  142 	BRES	0x5304, #0
+      000068 72 10 53 00      [ 1]  143 	BSET	0x5300, #0
+      00006C 72 5F 50 3F      [ 1]  144 	CLR	0x503F
+                                    145 ;	Interrupt Settings =================================================
+      000070 9A               [ 1]  146 	RIM	; Clear interrupt masks
+      000071 35 02 50 A0      [ 1]  147 	MOV	0x50A0 ,#0b00000010 ; Set falling edge for port A
+                                    148 ;	Clock Settings =====================================================
+      000075 AE 00 64         [ 2]  149 	LDW	X,#100; Timer for Xms
+      000078 3F 60            [ 1]  150 	CLR	0x60 ; Sec Low
+      00007A 3F 61            [ 1]  151 	CLR	0x61 ; Sec High
+      00007C 3F 62            [ 1]  152 	CLR	0x62 ; Min Low
+      00007E 3F 63            [ 1]  153 	CLR	0x63 ; Min High
+      000080 35 02 00 64      [ 1]  154 	MOV	0x64,#2 ; Hr LOW
+      000084 35 01 00 65      [ 1]  155 	MOV	0x65,#1 ; Hr High Set to 12oclock
+      000088 3F 66            [ 1]  156 	CLR	0x66 ; ASec Low
+      00008A 3F 67            [ 1]  157 	CLR	0x67 ; ASec High
+      00008C 3F 68            [ 1]  158 	CLR	0x68 ; AMin Low
+      00008E 3F 69            [ 1]  159 	CLR	0x69 ; AMin High
+      000090 3F 6A            [ 1]  160 	CLR	0x6A ; AHr Low
+      000092 3F 6B            [ 1]  161 	CLR	0x6B ; AHr High ; Set alarm to midnight
+                                    162 ;	Gpio Setup ; ========================================================
+      000094 72 16 50 02      [ 1]  163 	BSET	0x5002, #3
+      000098 72 16 50 03      [ 1]  164 	BSET	0x5003, #3
+      00009C 72 13 50 02      [ 1]  165 	BRES	0x5002, #1 ; PA_DDR bit3 = 0
+      0000A0 72 13 50 03      [ 1]  166 	BRES	0x5003, #1 ; PA_CR1 bit3 = 1
+      0000A4 72 5F 50 04      [ 1]  167 	CLR	0x5004
+      0000A8 72 12 50 04      [ 1]  168 	BSET	0x5004, #1 ; PA_CR2 bit3 = 1
+      0000AC 35 FF 50 11      [ 1]  169 	MOV	0x5011, #0xFF
+      0000B0 35 FF 50 12      [ 1]  170 	MOV	0x5012, #0XFF
+      0000B4 35 FF 50 0D      [ 1]  171 	MOV	0x500D, #0xFF
+                                    172 ;	LCD Setup ===========================================================
+      0000B8 CDr03rFF         [ 4]  173 	CALL	ClearShift
+      0000BB A6 30            [ 1]  174 	LD	A, #0b00110000; Fx Set Cmd
+      0000BD CDr04r20         [ 4]  175 	CALL	PopulateShift
+      0000C0 CDr04r58         [ 4]  176 	CALL	SendCommand
+      0000C3 CDr03rFF         [ 4]  177 	CALL	ClearShift
+      0000C6 A6 0C            [ 1]  178 	LD	A, #0b00001100; Display On
+      0000C8 CDr04r20         [ 4]  179 	CALL	PopulateShift
+      0000CB CDr04r58         [ 4]  180 	CALL	SendCommand
+      0000CE CDr03rFF         [ 4]  181 	CALL	ClearShift
+      0000D1 A6 06            [ 1]  182 	LD	A, #0b00000110; Entry mode Set
+      0000D3 CDr04r20         [ 4]  183 	CALL	PopulateShift
+      0000D6 CDr04r58         [ 4]  184 	CALL	SendCommand
+      0000D9 CDr03rFF         [ 4]  185 	CALL	ClearShift
+      0000DC CDr04r9E         [ 4]  186 	CALL	ClearScreen
+      0000DF CDr05r16         [ 4]  187 	CALL	ResetClk
+      0000E2                        188 Delayloop:
+      0000E2 72 0A 50 0B 2B   [ 2]  189 	BTJT	0x500B,#5,Skip ; If pressed changes what mode user is in C5
+      0000E7 72 03 00 52 26   [ 2]  190 	BTJF	0x52,#1,Skip
+      0000EC 72 05 00 52 21   [ 2]  191 	BTJF	0x52,#2,Skip
+      0000F1 CDr05r16         [ 4]  192 	CALL	ResetClk
+      0000F4 72 13 00 52      [ 1]  193 	BRES	0x52,#1
+      0000F8 72 15 00 52      [ 1]  194 	BRES	0x52,#2
+      0000FC 3C 51            [ 1]  195 	INC	0x51 ; Change Mode If button is hit
+      0000FE 72 11 00 53      [ 1]  196 	BRES	0x53,#0
+      000102 72 13 00 53      [ 1]  197 	BRES	0x53,#1
+      000106 72 15 00 53      [ 1]  198 	BRES	0x53,#2
+      00010A B6 51            [ 1]  199 	LD	A,0x51 ; Check what mode user is currently in
+      00010C A1 03            [ 1]  200 	CP	A,#3
+      00010E 26 02            [ 1]  201 	JRNE	Skip ; Overflow to Normal mode (0)
+      000110 3F 51            [ 1]  202 	CLR	0x51
+      000112                        203 Skip:
+      000112 72 01 53 04 CB   [ 2]  204 	BTJF	0x5304, #0, Delayloop ; Wait for a ms
+      000117 72 11 53 04      [ 1]  205 	BRES	0x5304, #0 ; Reset UIF
+      00011B 72 0D 00 53 03   [ 2]  206 	BTJF	0x53,#6,NoBeep
+      000120 CDr05rFE         [ 4]  207 	CALL	MakeBeep
+      000123                        208 NoBeep:
+      000123 CDr02r3F         [ 4]  209 	CALL	ClockMode ; Goto Clock Logic
+      000126 5A               [ 2]  210 	DECW	X ; Keep track of timing
+      000127 27 03            [ 1]  211 	JREQ	EndLoop
+      000129 CCr00rE2         [ 2]  212 	JP	Delayloop
+      00012C                        213 EndLoop:
+      00012C 72 02 00 52 07   [ 2]  214 	BTJT	0x52,#1,SetTwo
+      000131 72 12 00 52      [ 1]  215 	BSET	0x52,#1 ; Second over allow for button presses again
+      000135 CCr01r3C         [ 2]  216 	JP	SkipTwo
+      000138                        217 SetTwo:
+      000138 72 14 00 52      [ 1]  218 	BSET	0x52,#2
+      00013C                        219 SkipTwo:
+      00013C 72 13 00 70      [ 1]  220 	BRES	0x70,#1 ; Reset debounce logic
+      000140 72 11 53 04      [ 1]  221 	BRES	0x5304, #0 ; Reset UIF
+      000144 CDr01r70         [ 4]  222 	CALL	CheckAlarm
+      000147 90 1E 00 53      [ 1]  223 	BCPL	0x53,#7 ; Toggle alm every second
+      00014B AE 00 64         [ 2]  224 	LDW	X, #100; Reset timing register
+      00014E 72 09 00 53 1A   [ 2]  225 	BTJF	0x53,#4,SkipSec ; Skip incrementation if changing clock
+                                    226 ;	INC 0x60 ; Increment seconds NOT ACCURATE ONLY USE IF RTC NOT PRESENT
+      000153 72 02 00 53 03   [ 2]  227 	BTJT	0x53,#1,SkipAdj
+      000158 CDr04rCF         [ 4]  228 	CALL	AdjustTime ; Adjust for time overflows
+      00015B                        229 SkipAdj:
+      00015B 72 07 00 53 0D   [ 2]  230 	BTJF	0x53,#3,SkipSec ; Skip updating display if user is in alarm mode (keeps track in background)
+      000160 CDr04r92         [ 4]  231 	CALL	Backspace ; Print seconds
+      000163 B6 60            [ 1]  232 	LD	A, 0x60
+      000165 AB 30            [ 1]  233 	ADD	A,#48 ; Adjust to ASCII
+      000167 CDr04r20         [ 4]  234 	CALL	PopulateShift
+      00016A CDr04r73         [ 4]  235 	CALL	SendLetter
+      00016D                        236 SkipSec:
+      00016D CCr00rE2         [ 2]  237 	JP	Delayloop
+      000170                        238 CheckAlarm:
+      000170 B6 51            [ 1]  239 	LD	A,0x51
+      000172 A1 00            [ 1]  240 	CP	A,#0 ; Is in regular mode?
+      000174 26 21            [ 1]  241 	JRNE	ChkDone
+      000176 72 0B 00 53 1C   [ 2]  242 	BTJF	0x53,#5,ChkDone ; alarm disabled?
+      00017B B6 6B            [ 1]  243 	LD	A,0x6B ; alarm hr high
+      00017D B1 65            [ 1]  244 	CP	A,0x65
+      00017F 26 16            [ 1]  245 	JRNE	ChkDone
+      000181 B6 6A            [ 1]  246 	LD	A,0x6A ; alarm hr low
+      000183 B1 64            [ 1]  247 	CP	A,0x64
+      000185 26 10            [ 1]  248 	JRNE	ChkDone
+      000187 B6 69            [ 1]  249 	LD	A,0x69 ; alarm min high
+      000189 B1 63            [ 1]  250 	CP	A,0x63
+      00018B 26 0A            [ 1]  251 	JRNE	ChkDone
+      00018D B6 68            [ 1]  252 	LD	A,0x68 ; alarm min low
+      00018F B1 62            [ 1]  253 	CP	A,0x62
+      000191 26 04            [ 1]  254 	JRNE	ChkDone
+      000193 72 1C 00 53      [ 1]  255 	BSET	0x53,#6 ; start beeping
+      000197                        256 ChkDone:
+      000197 81               [ 4]  257 	RET
+      000198                        258 RegularMode:
+      000198 72 16 00 53      [ 1]  259 	BSET	0x53,#3 ; Make sure seconds are being updated
+      00019C 72 18 00 53      [ 1]  260 	BSET	0x53,#4 ; And the clock is ticking
+      0001A0 72 04 00 53 35   [ 2]  261 	BTJT	0x53,#2,SkipDispUpdReg ; Can I update Display?
+      0001A5 A6 0C            [ 1]  262 	LD	A, #0b00001100; Update it: (Cursor Off)
+      0001A7 CDr04r20         [ 4]  263 	CALL	PopulateShift
+      0001AA CDr04r58         [ 4]  264 	CALL	SendCommand
+      0001AD CDr03rFF         [ 4]  265 	CALL	ClearShift
+      0001B0 72 14 00 53      [ 1]  266 	BSET	0x53,#2
+      0001B4 72 11 00 53      [ 1]  267 	BRES	0x53,#0
+      0001B8 72 13 00 53      [ 1]  268 	BRES	0x53,#1
+      0001BC 72 0B 00 53 0E   [ 2]  269 	BTJF	0x53,#5,NoAlmIcon
+      0001C1 A6 2A            [ 1]  270 	LD	A,#0x2A
+      0001C3 CDr04r20         [ 4]  271 	CALL	PopulateShift
+      0001C6 CDr04r73         [ 4]  272 	CALL	SendLetter
+      0001C9 CDr04r92         [ 4]  273 	CALL	Backspace
+      0001CC CCr01rDA         [ 2]  274 	JP	SkipDispUpdReg
+      0001CF                        275 NoAlmIcon:
+      0001CF A6 20            [ 1]  276 	LD	A,#0x20
+      0001D1 CDr04r20         [ 4]  277 	CALL	PopulateShift
+      0001D4 CDr04r73         [ 4]  278 	CALL	SendLetter
+      0001D7 CDr04r92         [ 4]  279 	CALL	Backspace
+      0001DA                        280 SkipDispUpdReg:
+      0001DA 72 0E 50 0B 36   [ 2]  281 	BTJT	0x500B,#7, SkipAlmToggle
+      0001DF 72 03 00 52 31   [ 2]  282 	BTJF	0x52,#1, SkipAlmToggle
+      0001E4 72 05 00 52 2C   [ 2]  283 	BTJF	0x52,#2, SkipAlmToggle
+      0001E9 72 13 00 52      [ 1]  284 	BRES	0x52,#1
+      0001ED 72 15 00 52      [ 1]  285 	BRES	0x52,#2
+      0001F1 90 1A 00 53      [ 1]  286 	BCPL	0x53,#5 ; Toggle Alarm
+      0001F5 72 0A 00 53 13   [ 2]  287 	BTJT	0x53,#5, EnableAlm
+      0001FA                        288 DisableAlm:
+      0001FA 72 1F 00 53      [ 1]  289 	BRES	0x53,#7
+      0001FE 72 1D 00 53      [ 1]  290 	BRES	0x53,#6
+      000202 72 1B 00 53      [ 1]  291 	BRES	0x53,#5
+      000206 72 15 00 53      [ 1]  292 	BRES	0x53,#2
+      00020A CCr02r15         [ 2]  293 	JP	SkipAlmToggle
+      00020D                        294 EnableAlm:
+      00020D 72 1A 00 53      [ 1]  295 	BSET	0x53,#5
+      000211 72 15 00 53      [ 1]  296 	BRES	0x53,#2
+      000215                        297 SkipAlmToggle:
+      000215 72 0C 50 0B 24   [ 2]  298 	BTJT	0x500B,#6, SkipSnooze
+      00021A 72 03 00 52 1F   [ 2]  299 	BTJF	0x52,#1, SkipSnooze
+      00021F 72 05 00 52 1A   [ 2]  300 	BTJF	0x52,#2, SkipSnooze
+      000224 72 13 00 52      [ 1]  301 	BRES	0x52,#1
+      000228 72 15 00 52      [ 1]  302 	BRES	0x52,#2
+      00022C 72 0D 00 53 0D   [ 2]  303 	BTJF	0x53,#6,SkipSnooze ; only snooze alarm that is going
+      000231 3C 68            [ 1]  304 	INC	0x68 ; Add a minute to the alarm
+      000233 CDr04rCF         [ 4]  305 	CALL	AdjustTime
+      000236 72 1D 00 53      [ 1]  306 	BRES	0x53,#6 ;Silence alarm
+      00023A 72 1F 00 53      [ 1]  307 	BRES	0x53,#7
+      00023E                        308 SkipSnooze:
+      00023E 81               [ 4]  309 	RET
+      00023F                        310 ClockMode:
+      00023F 72 00 00 51 08   [ 2]  311 	BTJT	0x51,#0,AlarmSet
+      000244 72 02 00 51 40   [ 2]  312 	BTJT	0x51,#1,ClockSet
+      000249 CCr01r98         [ 2]  313 	JP	RegularMode
+      00024C                        314 AlarmSet:
+      00024C 72 16 00 53      [ 1]  315 	BSET	0x53,#3 ; Stop Updating seconds *************************************
+      000250 72 19 00 53      [ 1]  316 	BRES	0x53,#4 ; Stop Counting
+      000254 72 02 00 53 2C   [ 2]  317 	BTJT	0x53,#1,SkipDispUpdAlm ; Is alarm already configured?
+      000259 CDr05r8A         [ 4]  318 	CALL	DispAlarm ; No configure it
+      00025C A6 0E            [ 1]  319 	LD	A, #0b00001110; Cursor On
+      00025E CDr04r20         [ 4]  320 	CALL	PopulateShift
+      000261 CDr04r58         [ 4]  321 	CALL	SendCommand
+      000264 CDr03rFF         [ 4]  322 	CALL	ClearShift
+      000267 72 11 00 53      [ 1]  323 	BRES	0x53,#0 ; Set mode to alarm
+      00026B 72 15 00 53      [ 1]  324 	BRES	0x53,#2
+      00026F 72 12 00 53      [ 1]  325 	BSET	0x53,#1
+      000273 A6 41            [ 1]  326 	LD	A,#0x41
+      000275 CDr04r20         [ 4]  327 	CALL	PopulateShift
+      000278 CDr04r73         [ 4]  328 	CALL	SendLetter
+      00027B CDr04r92         [ 4]  329 	CALL	Backspace
+      00027E CDr04rB6         [ 4]  330 	CALL	ReturnHome
+      000281 3F 56            [ 1]  331 	CLR	0x56 ; Reset alarm variables
+      000283 3F 57            [ 1]  332 	CLR	0x57
+      000285                        333 SkipDispUpdAlm:
+      000285 CDr03r60         [ 4]  334 	CALL	AlarmSetLogic ; Set alarm
+      000288 81               [ 4]  335 	RET
+      000289                        336 ClockSet:
+      000289 3F 56            [ 1]  337 	CLR	0x56 ; Reset cursor position
+      00028B 89               [ 2]  338 	PUSHW	X ; Perserve X
+      00028C 72 17 00 53      [ 1]  339 	BRES	0x53,#3 ; Stop updating seconds
+      000290 72 19 00 53      [ 1]  340 	BRES	0x53,#4 ; Stop counting
+      000294 72 00 00 53 29   [ 2]  341 	BTJT	0x53,#0,SkipDispUpdClk ; Is clock configured
+      000299 A6 0E            [ 1]  342 	LD	A, #0b00001110 ; No confiure it
+      00029B CDr04r20         [ 4]  343 	CALL	PopulateShift
+      00029E CDr04r58         [ 4]  344 	CALL	SendCommand
+      0002A1 CDr03rFF         [ 4]  345 	CALL	ClearShift
+      0002A4 72 13 00 53      [ 1]  346 	BRES	0x53,#1
+      0002A8 72 15 00 53      [ 1]  347 	BRES	0x53,#2
+      0002AC 72 10 00 53      [ 1]  348 	BSET	0x53,#0
+      0002B0 A6 43            [ 1]  349 	LD	A,#0x43
+      0002B2 CDr04r20         [ 4]  350 	CALL	PopulateShift
+      0002B5 CDr04r73         [ 4]  351 	CALL	SendLetter
+      0002B8 CDr04r92         [ 4]  352 	CALL	Backspace
+      0002BB CDr04rB6         [ 4]  353 	CALL	ReturnHome
+      0002BE 3F 54            [ 1]  354 	CLR	0x54 ; Reset cursor
+      0002C0 3F 55            [ 1]  355 	CLR	0x55
+      0002C2                        356 SkipDispUpdClk:
+      0002C2 72 0E 50 0B 3C   [ 2]  357 	BTJT	0x500B,#7,SkipClkMov ; Button Press?
+      0002C7 72 03 00 52 37   [ 2]  358 	BTJF	0x52,#1,SkipClkMov
+      0002CC 72 05 00 52 32   [ 2]  359 	BTJF	0x52,#2,SkipClkMov
+      0002D1 72 13 00 52      [ 1]  360 	BRES	0x52,#1 ; Debounce
+      0002D5 72 15 00 52      [ 1]  361 	BRES	0x52,#2 ; Debounce
+      0002D9 3C 54            [ 1]  362 	INC	0x54 ; Cursor move logic ==================
+      0002DB 3C 55            [ 1]  363 	INC	0x55
+      0002DD B6 54            [ 1]  364 	LD	A,0x54
+      0002DF A1 02            [ 1]  365 	CP	A,#2
+      0002E1 27 0B            [ 1]  366 	JREQ	MovTwo
+      0002E3 A1 05            [ 1]  367 	CP	A,#5
+      0002E5 27 07            [ 1]  368 	JREQ	MovTwo
+      0002E7 A1 08            [ 1]  369 	CP	A,#8
+      0002E9 27 0E            [ 1]  370 	JREQ	ToStart
+      0002EB CCr02rF3         [ 2]  371 	JP	MovOne
+      0002EE                        372 MovTwo:
+      0002EE CDr04rAA         [ 4]  373 	CALL	MovRight
+      0002F1 3C 54            [ 1]  374 	INC	0x54
+      0002F3                        375 MovOne:
+      0002F3 CDr04rAA         [ 4]  376 	CALL	MovRight
+      0002F6 CCr03r03         [ 2]  377 	JP	SkipClkMov
+      0002F9                        378 ToStart:
+      0002F9 3F 54            [ 1]  379 	CLR	0x54
+      0002FB 3F 55            [ 1]  380 	CLR	0x55
+      0002FD CDr04rAA         [ 4]  381 	CALL	MovRight
+      000300 CDr04rB6         [ 4]  382 	CALL	ReturnHome
+      000303                        383 SkipClkMov:
+                                    384 ; Clock change logic ========================
+      000303 72 0C 50 0B 56   [ 2]  385 	BTJT	0x500B,#6,SkipClkInc
+      000308 72 03 00 52 51   [ 2]  386 	BTJF	0x52,#1,SkipClkInc
+      00030D 72 05 00 52 4C   [ 2]  387 	BTJF	0x52,#2,SkipClkInc
+      000312 72 13 00 52      [ 1]  388 	BRES	0x52,#1
+      000316 72 15 00 52      [ 1]  389 	BRES	0x52,#2
+      00031A A6 05            [ 1]  390 	LD	A, #5
+      00031C B0 55            [ 1]  391 	SUB	A, 0x55
+      00031E 5F               [ 1]  392 	CLRW	X
+      00031F 41               [ 1]  393 	EXG	A,XL
+      000320 6C 60            [ 1]  394 	INC	(0x60,X)
+      000322 B6 55            [ 1]  395 	LD	A, 0x55
+      000324 A1 00            [ 1]  396 	CP	A,#0
+      000326 27 1E            [ 1]  397 	JREQ	AdjTwo
+      000328 A1 02            [ 1]  398 	CP	A,#2
+      00032A 27 0F            [ 1]  399 	JREQ	AdjSix
+      00032C A1 04            [ 1]  400 	CP	A,#4
+      00032E 27 0B            [ 1]  401 	JREQ	AdjSix
+      000330 E6 60            [ 1]  402 	LD	A,(0x60,X)
+      000332 A1 0A            [ 1]  403 	CP	A,#10
+      000334 26 18            [ 1]  404 	JRNE	PrintVal
+      000336 6F 60            [ 1]  405 	CLR	(0x60,X)
+      000338 CCr03r4E         [ 2]  406 	JP	PrintVal
+      00033B                        407 AdjSix:
+      00033B E6 60            [ 1]  408 	LD	A,(0x60,X)
+      00033D A1 06            [ 1]  409 	CP	A,#6
+      00033F 26 0D            [ 1]  410 	JRNE	PrintVal
+      000341 6F 60            [ 1]  411 	CLR	(0x60,X)
+      000343 CCr03r4E         [ 2]  412 	JP	PrintVal
+      000346                        413 AdjTwo:
+      000346 E6 60            [ 1]  414 	LD	A,(0x60,X)
+      000348 A1 03            [ 1]  415 	CP	A,#3
+      00034A 26 02            [ 1]  416 	JRNE	PrintVal
+      00034C 6F 60            [ 1]  417 	CLR	(0x60,X)
+      00034E                        418 PrintVal:
+      00034E E6 60            [ 1]  419 	LD	A,(0x60,X)
+      000350 AB 30            [ 1]  420 	ADD	A,#48 ; Adjust to ASCII
+      000352 CDr04r20         [ 4]  421 	CALL	PopulateShift
+      000355 CDr04r73         [ 4]  422 	CALL	SendLetter
+      000358 CDr04r92         [ 4]  423 	CALL	Backspace
+      00035B CDr03rFF         [ 4]  424 	CALL	ClearShift
+      00035E                        425 SkipClkInc:
+      00035E 85               [ 2]  426 	POPW	X
+      00035F 81               [ 4]  427 	RET
+      000360                        428 AlarmSetLogic:
+      000360 89               [ 2]  429 	PUSHW	X
+      000361 72 0E 50 0B 3C   [ 2]  430 	BTJT	0x500B,#7,SkipAlmMov ; Is move button pressed?
+      000366 72 03 00 52 37   [ 2]  431 	BTJF	0x52,#1,SkipAlmMov
+      00036B 72 05 00 52 32   [ 2]  432 	BTJF	0x52,#2,SkipAlmMov
+      000370 72 13 00 52      [ 1]  433 	BRES	0x52,#1
+      000374 72 15 00 52      [ 1]  434 	BRES	0x52,#2
+      000378 3C 56            [ 1]  435 	INC	0x56 ; Inc cursor position
+      00037A 3C 57            [ 1]  436 	INC	0x57 ; inc number index
+      00037C B6 56            [ 1]  437 	LD	A,0x56
+      00037E A1 02            [ 1]  438 	CP	A,#2 ; Is Colon?
+      000380 27 0B            [ 1]  439 	JREQ	MovTwoAlm ; Yes Move Two
+      000382 A1 05            [ 1]  440 	CP	A,#5 ; Is Colon?
+      000384 27 07            [ 1]  441 	JREQ	MovTwoAlm ; Yes Move Two
+      000386 A1 08            [ 1]  442 	CP	A,#8 ; Is at end?
+      000388 27 0E            [ 1]  443 	JREQ	ToStartAlm ; Yes reset Cursor
+      00038A CCr03r92         [ 2]  444 	JP	MovOneAlm ; Else move cursor Regularly
+      00038D                        445 MovTwoAlm:
+      00038D CDr04rAA         [ 4]  446 	CALL	MovRight
+      000390 3C 56            [ 1]  447 	INC	0x56
+      000392                        448 MovOneAlm:
+      000392 CDr04rAA         [ 4]  449 	CALL	MovRight
+      000395 CCr03rA2         [ 2]  450 	JP	SkipAlmMov
+      000398                        451 ToStartAlm:
+      000398 3F 56            [ 1]  452 	CLR	0x56
+      00039A 3F 57            [ 1]  453 	CLR	0x57
+      00039C CDr04rAA         [ 4]  454 	CALL	MovRight ; Adjust to correct position before moving home
+      00039F CDr04rB6         [ 4]  455 	CALL	ReturnHome
+      0003A2                        456 SkipAlmMov:
+      0003A2 72 0C 50 0B 56   [ 2]  457 	BTJT	0x500B,#6,SkipAlmInc ; Is increment button pressed?
+      0003A7 72 03 00 52 51   [ 2]  458 	BTJF	0x52,#1,SkipAlmInc
+      0003AC 72 05 00 52 4C   [ 2]  459 	BTJF	0x52,#2,SkipAlmInc
+      0003B1 72 13 00 52      [ 1]  460 	BRES	0x52,#1
+      0003B5 72 15 00 52      [ 1]  461 	BRES	0x52,#2
+      0003B9 A6 05            [ 1]  462 	LD	A, #5
+      0003BB B0 57            [ 1]  463 	SUB	A, 0x57 ; Adjust for registers being revesed from inx. (Hrs->sec vs sec->hrs)
+      0003BD 5F               [ 1]  464 	CLRW	X
+      0003BE 41               [ 1]  465 	EXG	A,XL
+      0003BF 6C 66            [ 1]  466 	INC	(0x66,X) ; Adjust each alarm register
+      0003C1 B6 57            [ 1]  467 	LD	A, 0x57 ; Below just checks for overflow
+      0003C3 A1 00            [ 1]  468 	CP	A,#0
+      0003C5 27 1E            [ 1]  469 	JREQ	AdjTwoAlm
+      0003C7 A1 02            [ 1]  470 	CP	A,#2
+      0003C9 27 0F            [ 1]  471 	JREQ	AdjSixAlm
+      0003CB A1 04            [ 1]  472 	CP	A,#4
+      0003CD 27 0B            [ 1]  473 	JREQ	AdjSixAlm
+      0003CF E6 66            [ 1]  474 	LD	A,(0x66,X)
+      0003D1 A1 0A            [ 1]  475 	CP	A,#10
+      0003D3 26 18            [ 1]  476 	JRNE	PrintValAlm
+      0003D5 6F 66            [ 1]  477 	CLR	(0x66,X)
+      0003D7 CCr03rED         [ 2]  478 	JP	PrintValAlm
+      0003DA                        479 AdjSixAlm:
+      0003DA E6 66            [ 1]  480 	LD	A,(0x66,X)
+      0003DC A1 06            [ 1]  481 	CP	A,#6
+      0003DE 26 0D            [ 1]  482 	JRNE	PrintValAlm
+      0003E0 6F 66            [ 1]  483 	CLR	(0x66,X)
+      0003E2 CCr03rED         [ 2]  484 	JP	PrintValAlm
+      0003E5                        485 AdjTwoAlm:
+      0003E5 E6 66            [ 1]  486 	LD	A,(0x66,X)
+      0003E7 A1 03            [ 1]  487 	CP	A,#3
+      0003E9 26 02            [ 1]  488 	JRNE	PrintValAlm
+      0003EB 6F 66            [ 1]  489 	CLR	(0x66,X)
+      0003ED                        490 PrintValAlm:
+                                    491 ; Throw new value to display
+      0003ED E6 66            [ 1]  492 	LD	A,(0x66,X)
+      0003EF AB 30            [ 1]  493 	ADD	A,#48 ; Adjust to ASCII
+      0003F1 CDr04r20         [ 4]  494 	CALL	PopulateShift
+      0003F4 CDr04r73         [ 4]  495 	CALL	SendLetter
+      0003F7 CDr04r92         [ 4]  496 	CALL	Backspace
+      0003FA CDr03rFF         [ 4]  497 	CALL	ClearShift
+      0003FD                        498 SkipAlmInc:
+      0003FD 85               [ 2]  499 	POPW	X
+      0003FE 81               [ 4]  500 	RET
+                                    501 ;	Clears the shift register
+      0003FF                        502 ClearShift:
+      0003FF 88               [ 1]  503 	PUSH	A
+      000400 A6 08            [ 1]  504 	LD	A,#8
+      000402 72 13 50 0F      [ 1]  505 	BRES	0x500F, #1
+      000406                        506 ClearLoop:
+      000406 72 16 50 0F      [ 1]  507 	BSET	0x500F, #3
+      00040A 9D               [ 1]  508 	NOP
+      00040B 72 17 50 0F      [ 1]  509 	BRES	0x500F, #3
+      00040F 4A               [ 1]  510 	DEC	A
+      000410 27 03            [ 1]  511 	JREQ	ClearDone
+      000412 CCr04r06         [ 2]  512 	JP	ClearLoop
+      000415                        513 ClearDone:
+      000415 72 14 50 0F      [ 1]  514 	BSET	0x500F, #2
+      000419 9D               [ 1]  515 	NOP
+      00041A 72 15 50 0F      [ 1]  516 	BRES	0x500F, #2
+      00041E 84               [ 1]  517 	POP	A
+      00041F 81               [ 4]  518 	RET
+                                    519 ;	Populates shift register with value in A
+      000420                        520 PopulateShift:
+      000420 CDr06r0D         [ 4]  521 	CALL	DumbDelay
+      000423 89               [ 2]  522 	PUSHW	X
+      000424 B7 50            [ 1]  523 	LD	0x50, A
+      000426 AE 00 08         [ 2]  524 	LDW	X,#8
+      000429                        525 PopLoop:
+      000429 27 22            [ 1]  526 	JREQ	PopDone
+      00042B 72 0E 00 50 03   [ 2]  527 	BTJT	0x50,#7,ShiftO
+      000430 CCr04r3A         [ 2]  528 	JP	ShiftZ
+      000433                        529 ShiftO:
+      000433 72 12 50 0F      [ 1]  530 	BSET	0x500F, #1
+      000437 CCr04r3E         [ 2]  531 	JP	PulseClk
+      00043A                        532 ShiftZ:
+      00043A 72 13 50 0F      [ 1]  533 	BRES	0x500F, #1
+      00043E                        534 PulseClk:
+      00043E 72 16 50 0F      [ 1]  535 	BSET	0x500F, #3
+      000442 9D               [ 1]  536 	NOP
+      000443 72 17 50 0F      [ 1]  537 	BRES	0x500F, #3
+      000447 38 50            [ 1]  538 	SLL	0x50
+      000449 5A               [ 2]  539 	DECW	X
+      00044A CCr04r29         [ 2]  540 	JP	PopLoop
+      00044D                        541 PopDone:
+      00044D 72 14 50 0F      [ 1]  542 	BSET	0x500F, #2
+      000451 9D               [ 1]  543 	NOP
+      000452 72 15 50 0F      [ 1]  544 	BRES	0x500F, #2
+      000456 85               [ 2]  545 	POPW	X
+      000457 81               [ 4]  546 	ret
+      000458                        547 SendCommand:
+      000458 72 1B 50 0F      [ 1]  548 	BRES	0x500F, #5 ; Clear RS
+      00045C 72 1D 50 0F      [ 1]  549 	BRES	0x500F, #6 ; Clear E
+      000460 72 1C 50 0F      [ 1]  550 	BSET	0x500F, #6 ; Set E to send instruction
+      000464 9D               [ 1]  551 	NOP
+      000465 9D               [ 1]  552 	NOP
+      000466 9D               [ 1]  553 	NOP
+      000467 72 1D 50 0F      [ 1]  554 	BRES	0x500F, #6 ; Clear E
+      00046B 9D               [ 1]  555 	NOP
+      00046C 9D               [ 1]  556 	NOP
+      00046D 9D               [ 1]  557 	NOP	; Little delay
+      00046E 72 1B 50 0F      [ 1]  558 	BRES	0x500F, #5 ; Clear RS
+      000472 81               [ 4]  559 	RET
+      000473                        560 SendLetter:
+      000473 72 1B 50 0F      [ 1]  561 	BRES	0x500F, #5 ; Clear RS
+      000477 72 1D 50 0F      [ 1]  562 	BRES	0x500F, #6 ; Clear E
+      00047B 72 1C 50 0F      [ 1]  563 	BSET	0x500F, #6 ; Set E to send instruction
+      00047F 72 1A 50 0F      [ 1]  564 	BSET	0x500F, #5 ; Set RS
+      000483 9D               [ 1]  565 	NOP
+      000484 9D               [ 1]  566 	NOP
+      000485 9D               [ 1]  567 	NOP
+      000486 72 1D 50 0F      [ 1]  568 	BRES	0x500F, #6 ; Clear E
+      00048A 9D               [ 1]  569 	NOP
+      00048B 9D               [ 1]  570 	NOP
+      00048C 9D               [ 1]  571 	NOP
+      00048D 72 1B 50 0F      [ 1]  572 	BRES	0x500F, #5 ; Clear RS
+      000491 81               [ 4]  573 	RET
+      000492                        574 Backspace:
+      000492 CDr03rFF         [ 4]  575 	CALL	ClearShift
+      000495 A6 10            [ 1]  576 	LD	A, #0b00010000; Shift cursor left
+      000497 CDr04r20         [ 4]  577 	CALL	PopulateShift
+      00049A CDr04r58         [ 4]  578 	CALL	SendCommand
+      00049D 81               [ 4]  579 	RET
+      00049E                        580 ClearScreen:
+      00049E A6 01            [ 1]  581 	LD	A, #1 ; Clear Display
+      0004A0 CDr04r20         [ 4]  582 	CALL	PopulateShift
+      0004A3 CDr04r58         [ 4]  583 	CALL	SendCommand
+      0004A6 CDr03rFF         [ 4]  584 	CALL	ClearShift
+      0004A9 81               [ 4]  585 	RET
+      0004AA                        586 MovRight:
+      0004AA CDr03rFF         [ 4]  587 	CALL	ClearShift
+      0004AD A6 14            [ 1]  588 	LD	A, #0b00010100
+      0004AF CDr04r20         [ 4]  589 	CALL	PopulateShift
+      0004B2 CDr04r58         [ 4]  590 	CALL	SendCommand
+      0004B5 81               [ 4]  591 	RET
+      0004B6                        592 ReturnHome:
+      0004B6 CDr04r92         [ 4]  593 	CALL	Backspace
+      0004B9 CDr04r92         [ 4]  594 	CALL	Backspace
+      0004BC CDr04r92         [ 4]  595 	CALL	Backspace
+      0004BF CDr04r92         [ 4]  596 	CALL	Backspace
+      0004C2 CDr04r92         [ 4]  597 	CALL	Backspace
+      0004C5 CDr04r92         [ 4]  598 	CALL	Backspace
+      0004C8 CDr04r92         [ 4]  599 	CALL	Backspace
+      0004CB CDr04r92         [ 4]  600 	CALL	Backspace
+      0004CE 81               [ 4]  601 	RET
+      0004CF                        602 AdjustTime:
+      0004CF B6 60            [ 1]  603 	LD	A,0x60 ; Are seconds low (00:00:0X) overflow?
+      0004D1 A1 0A            [ 1]  604 	CP	A,#10
+      0004D3 26 40            [ 1]  605 	JRNE	AdjTimeDoneSec
+      0004D5                        606 SecLowOv:
+      0004D5 3C 61            [ 1]  607 	INC	0x61 ; Yes inc sec high (00:00:X0)
+      0004D7 B6 61            [ 1]  608 	LD	A,0x61
+      0004D9 3F 60            [ 1]  609 	CLR	0x60 ; Are sec high overflow?
+      0004DB A1 06            [ 1]  610 	CP	A,#6
+      0004DD 26 32            [ 1]  611 	JRNE	AdjTimeDone
+      0004DF                        612 SecHighOver:
+      0004DF 3C 62            [ 1]  613 	INC	0x62 ; Are mins low over?
+      0004E1 B6 62            [ 1]  614 	LD	A,0x62
+      0004E3 3F 61            [ 1]  615 	CLR	0x61
+      0004E5 A1 0A            [ 1]  616 	CP	A,#10
+      0004E7 26 28            [ 1]  617 	JRNE	AdjTimeDone
+      0004E9                        618 MinLowOver:
+      0004E9 3C 63            [ 1]  619 	INC	0x63 ; Are mins high over?
+      0004EB B6 63            [ 1]  620 	LD	A,0x63
+      0004ED 3F 62            [ 1]  621 	CLR	0x62
+      0004EF A1 06            [ 1]  622 	CP	A,#6
+      0004F1 26 1E            [ 1]  623 	JRNE	AdjTimeDone
+      0004F3                        624 MinHighOver:
+      0004F3 3C 64            [ 1]  625 	INC	0x64 ; hour low++
+      0004F5 3F 63            [ 1]  626 	CLR	0x63 ; min high = 0
+                                    627 ;	carry hour low if it hit 10
+      0004F7 B6 64            [ 1]  628 	LD	A,0x64
+      0004F9 A1 0A            [ 1]  629 	CP	A,#10
+      0004FB 26 04            [ 1]  630 	JRNE	Check24
+      0004FD 3F 64            [ 1]  631 	CLR	0x64
+      0004FF 3C 65            [ 1]  632 	INC	0x65
+      000501                        633 Check24:
+                                    634 ;	reset only at 24:00
+      000501 B6 65            [ 1]  635 	LD	A,0x65
+      000503 A1 02            [ 1]  636 	CP	A,#2
+      000505 26 0A            [ 1]  637 	JRNE	AdjTimeDone
+      000507 B6 64            [ 1]  638 	LD	A,0x64
+      000509 A1 04            [ 1]  639 	CP	A,#4
+      00050B 26 04            [ 1]  640 	JRNE	AdjTimeDone
+      00050D 3F 65            [ 1]  641 	CLR	0x65
+      00050F 3F 64            [ 1]  642 	CLR	0x64
+      000511                        643 AdjTimeDone:
+      000511 CDr05r16         [ 4]  644 	CALL	ResetClk
+      000514 81               [ 4]  645 	RET
+      000515                        646 AdjTimeDoneSec:
+      000515 81               [ 4]  647 	RET
+      000516                        648 ResetClk:
+      000516 CDr04r9E         [ 4]  649 	CALL	ClearScreen
+      000519 B6 65            [ 1]  650 	LD	A, 0x65
+      00051B AB 30            [ 1]  651 	ADD	A,#48 ; Adjust to ASCII
+      00051D CDr04r20         [ 4]  652 	CALL	PopulateShift
+      000520 CDr04r73         [ 4]  653 	CALL	SendLetter
+      000523 CDr03rFF         [ 4]  654 	CALL	ClearShift
+      000526 B6 64            [ 1]  655 	LD	A, 0x64
+      000528 AB 30            [ 1]  656 	ADD	A,#48 ; Adjust to ASCII
+      00052A CDr04r20         [ 4]  657 	CALL	PopulateShift
+      00052D CDr04r73         [ 4]  658 	CALL	SendLetter
+      000530 CDr03rFF         [ 4]  659 	CALL	ClearShift
+      000533 A6 3A            [ 1]  660 	LD	A,#0x3A
+      000535 CDr04r20         [ 4]  661 	CALL	PopulateShift
+      000538 CDr04r73         [ 4]  662 	CALL	SendLetter
+      00053B CDr03rFF         [ 4]  663 	CALL	ClearShift
+      00053E B6 63            [ 1]  664 	LD	A, 0x63
+      000540 AB 30            [ 1]  665 	ADD	A,#48 ; Adjust to ASCII
+      000542 CDr04r20         [ 4]  666 	CALL	PopulateShift
+      000545 CDr04r73         [ 4]  667 	CALL	SendLetter
+      000548 CDr03rFF         [ 4]  668 	CALL	ClearShift
+      00054B B6 62            [ 1]  669 	LD	A, 0x62
+      00054D AB 30            [ 1]  670 	ADD	A,#48 ; Adjust to ASCII
+      00054F CDr04r20         [ 4]  671 	CALL	PopulateShift
+      000552 CDr04r73         [ 4]  672 	CALL	SendLetter
+      000555 CDr03rFF         [ 4]  673 	CALL	ClearShift
+      000558 A6 3A            [ 1]  674 	LD	A,#0x3A
+      00055A CDr04r20         [ 4]  675 	CALL	PopulateShift
+      00055D CDr04r73         [ 4]  676 	CALL	SendLetter
+      000560 CDr03rFF         [ 4]  677 	CALL	ClearShift
+      000563 B6 61            [ 1]  678 	LD	A, 0x61
+      000565 AB 30            [ 1]  679 	ADD	A,#48 ; Adjust to ASCII
+      000567 CDr04r20         [ 4]  680 	CALL	PopulateShift
+      00056A CDr04r73         [ 4]  681 	CALL	SendLetter
+      00056D CDr03rFF         [ 4]  682 	CALL	ClearShift
+      000570 B6 60            [ 1]  683 	LD	A, 0x60
+      000572 AB 30            [ 1]  684 	ADD	A,#48 ; Adjust to ASCII
+      000574 CDr04r20         [ 4]  685 	CALL	PopulateShift
+      000577 CDr04r73         [ 4]  686 	CALL	SendLetter
+      00057A CDr03rFF         [ 4]  687 	CALL	ClearShift
+      00057D 72 11 00 53      [ 1]  688 	BRES	0x53,#0
+      000581 72 13 00 53      [ 1]  689 	BRES	0x53,#1
+      000585 72 15 00 53      [ 1]  690 	BRES	0x53,#2
+                                    691 ;CALL	ClockMode
+      000589 81               [ 4]  692 	RET
+      00058A                        693 DispAlarm:
+      00058A CDr04r9E         [ 4]  694 	CALL	ClearScreen
+      00058D B6 6B            [ 1]  695 	LD	A, 0x6B
+      00058F AB 30            [ 1]  696 	ADD	A,#48 ; Adjust to ASCII
+      000591 CDr04r20         [ 4]  697 	CALL	PopulateShift
+      000594 CDr04r73         [ 4]  698 	CALL	SendLetter
+      000597 CDr03rFF         [ 4]  699 	CALL	ClearShift
+      00059A B6 6A            [ 1]  700 	LD	A, 0x6A
+      00059C AB 30            [ 1]  701 	ADD	A,#48 ; Adjust to ASCII
+      00059E CDr04r20         [ 4]  702 	CALL	PopulateShift
+      0005A1 CDr04r73         [ 4]  703 	CALL	SendLetter
+      0005A4 CDr03rFF         [ 4]  704 	CALL	ClearShift
+      0005A7 A6 3A            [ 1]  705 	LD	A,#0x3A
+      0005A9 CDr04r20         [ 4]  706 	CALL	PopulateShift
+      0005AC CDr04r73         [ 4]  707 	CALL	SendLetter
+      0005AF CDr03rFF         [ 4]  708 	CALL	ClearShift
+      0005B2 B6 69            [ 1]  709 	LD	A, 0x69
+      0005B4 AB 30            [ 1]  710 	ADD	A,#48 ; Adjust to ASCII
+      0005B6 CDr04r20         [ 4]  711 	CALL	PopulateShift
+      0005B9 CDr04r73         [ 4]  712 	CALL	SendLetter
+      0005BC CDr03rFF         [ 4]  713 	CALL	ClearShift
+      0005BF B6 68            [ 1]  714 	LD	A, 0x68
+      0005C1 AB 30            [ 1]  715 	ADD	A,#48 ; Adjust to ASCII
+      0005C3 CDr04r20         [ 4]  716 	CALL	PopulateShift
+      0005C6 CDr04r73         [ 4]  717 	CALL	SendLetter
+      0005C9 CDr03rFF         [ 4]  718 	CALL	ClearShift
+      0005CC A6 3A            [ 1]  719 	LD	A,#0x3A
+      0005CE CDr04r20         [ 4]  720 	CALL	PopulateShift
+      0005D1 CDr04r73         [ 4]  721 	CALL	SendLetter
+      0005D4 CDr03rFF         [ 4]  722 	CALL	ClearShift
+      0005D7 B6 67            [ 1]  723 	LD	A, 0x67
+      0005D9 AB 30            [ 1]  724 	ADD	A,#48 ; Adjust to ASCII
+      0005DB CDr04r20         [ 4]  725 	CALL	PopulateShift
+      0005DE CDr04r73         [ 4]  726 	CALL	SendLetter
+      0005E1 CDr03rFF         [ 4]  727 	CALL	ClearShift
+      0005E4 B6 66            [ 1]  728 	LD	A, 0x66
+      0005E6 AB 30            [ 1]  729 	ADD	A,#48 ; Adjust to ASCII
+      0005E8 CDr04r20         [ 4]  730 	CALL	PopulateShift
+      0005EB CDr04r73         [ 4]  731 	CALL	SendLetter
+      0005EE CDr03rFF         [ 4]  732 	CALL	ClearShift
+      0005F1 72 11 00 53      [ 1]  733 	BRES	0x53,#0
+      0005F5 72 13 00 53      [ 1]  734 	BRES	0x53,#1
+      0005F9 72 15 00 53      [ 1]  735 	BRES	0x53,#2
+                                    736 ;CALL	ClockMode
+      0005FD 81               [ 4]  737 	RET
+      0005FE                        738 MakeBeep:
+      0005FE 72 0F 00 53 05   [ 2]  739 	BTJF	0x53,#7,SkipBeep
+      000603 90 18 50 0F      [ 1]  740 	BCPL	0x500F, #4 ; Toggle Port D, Pin 4 (Creates 500Hz Tone)
+      000607 81               [ 4]  741 	RET
+      000608                        742 SkipBeep:
+      000608 72 19 50 0F      [ 1]  743 	BRES	0x500F,#4
+      00060C 81               [ 4]  744 	RET
+      00060D                        745 DumbDelay:
+      00060D 89               [ 2]  746 	PUSHW	X
+      00060E AE FF FF         [ 2]  747 	LDW	X, #0xFFFF
+      000611                        748 DumbLoop:
+      000611 5A               [ 2]  749 	DECW	X
+      000612 27 03            [ 1]  750 	JREQ	DumbDone
+      000614 CCr06r11         [ 2]  751 	JP	DumbLoop
+      000617                        752 DumbDone:
+      000617 85               [ 2]  753 	POPW	X
+      000618 81               [ 4]  754 	RET
+                                    755 ;	main.c: 756: }
+      000619 81               [ 4]  756 	ret
+                                    757 	.area CODE
+                                    758 	.area CONST
+                                    759 	.area INITIALIZER
+                                    760 	.area CABS (ABS)

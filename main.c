@@ -31,7 +31,26 @@
  *  ; RS -> D5
  *  ; RW -> GND 
  *  ; E -> D6 
+ *
+ *  Right Button: C5
+ *  Middle Button: C6
+ *  Left Button: C7
+ *  CLK PIN: A1
+ *  ALM PIN: D4
+ *
+ *
  */
+
+void rtc_isr (void) __interrupt(3){
+    __asm
+        LD  A, 0x5001
+        BTJT 0x70,#1, NoSecUpd
+        BTJF 0x53,#4,NoSecUpd; Skip incrementation if changing clock
+        INC 0x60
+        BSET 0x70,#1 ; Debounce
+    NoSecUpd:
+    __endasm;
+}
 
 
 void main(void){
@@ -39,11 +58,14 @@ void main(void){
     Setup:
         ; Misc Variables
         CLR 0x51 ; Regular Mode = 0, AlarmSet = 1, TimeSet = 2;
+        CLR 0x70 ; SWQ FLAG
         BSET 0x52,#1 ; Allows button pressses to be registered. Cleared when button pressed, set every second
+        BSET 0x52,#2 ; Doubles debounce cuz yeah
         CLR 0x53 ; BeeperOn|AlmGoing|AlmSet|Count|UpdateSec|R Disp|A Disp|C Disp|
         BSET 0x53,#3 ; UpdateSec Enabled on start
         BSET 0x53,#4 ; Count Enabled on start
         BSET 0x53,#5 ; Alm Enabled on start
+        BRES 0x53,#6 ; Beeper not on 
         CLR 0x54 ; Used toAlm  hold cursor position on clk change
         CLR 0x55 ; Index to hold what number to increment
         CLR 0x56 ; Used toAlm  hold cursor position on clk change
@@ -64,9 +86,13 @@ void main(void){
         BSET 0x5300, #0
         CLR 0x503F
 
+        ; Interrupt Settings =================================================
+        RIM ; Clear interrupt masks
+        MOV 0x50A0 ,#0b00000010 ; Set falling edge for port A
 
         ; Clock Settings  =====================================================
-        LDW X,#1000 ; Timer for 1s 
+        LDW X,#100; Timer for Xms 
+
         CLR 0x60 ; Sec Low
         CLR 0x61 ; Sec High
         CLR 0x62 ; Min Low
@@ -81,8 +107,15 @@ void main(void){
         CLR 0x6A ; AHr Low
         CLR 0x6B ; AHr High ; Set alarm to midnight
         ; Gpio Setup ; ========================================================
-        MOV 0x5002, #0xFF
-        MOV 0x5003, #0xFF
+
+        BSET 0x5002, #3
+        BSET 0x5003, #3
+
+        BRES 0x5002, #1      ; PA_DDR bit3 = 0
+        BRES 0x5003, #1      ; PA_CR1 bit3 = 1
+        CLR  0x5004
+        BSET 0x5004, #1      ; PA_CR2 bit3 = 1
+
 
         MOV 0x5011, #0xFF
         MOV 0x5012, #0XFF
@@ -111,18 +144,19 @@ void main(void){
         
 
     Delayloop:
-        BTJT 0x500B,#5,Skip ; If pressed changes what mode user is in
+        BTJT 0x500B,#5,Skip ; If pressed changes what mode user is in C5
         BTJF 0x52,#1,Skip
+        BTJF 0x52,#2,Skip
         CALL ResetClk
-        CLR 0x54 ; Reset Cursor Pos
         BRES 0x52,#1
+        BRES 0x52,#2
         INC 0x51 ; Change Mode If button is hit
         BRES 0x53,#0
         BRES 0x53,#1
         BRES 0x53,#2
         LD A,0x51 ; Check what mode user is currently in
         CP A,#3
-        JRNE Skip ; Overflow to Normal mode
+        JRNE Skip ; Overflow to Normal mode (0)
         CLR 0x51
     Skip:
         BTJF 0x5304, #0, Delayloop ; Wait for a ms
@@ -135,15 +169,21 @@ void main(void){
         JREQ EndLoop
         JP Delayloop
     EndLoop:
+        BTJT 0x52,#1,SetTwo
         BSET 0x52,#1 ; Second over allow for button presses again
+        JP SkipTwo
+    SetTwo:
+        BSET 0x52,#2
+    SkipTwo:
+        BRES 0x70,#1 ; Reset debounce logic
         BRES 0x5304, #0 ; Reset UIF
+        CALL CheckAlarm
         BCPL 0x53,#7 ; Toggle alm every second
-        LDW X, #1000 ; Reset timing register 
+        LDW X, #100; Reset timing register 
         BTJF 0x53,#4,SkipSec ; Skip incrementation if changing clock
-        INC 0x60 ; Increment seconds
+        ; INC 0x60 ; Increment seconds NOT ACCURATE ONLY USE IF RTC NOT PRESENT 
         BTJT 0x53,#1,SkipAdj
         CALL AdjustTime ; Adjust for time overflows
-        CALL CheckAlarm
     SkipAdj:
         BTJF 0x53,#3,SkipSec ; Skip updating display if user is in alarm mode (keeps track in background)
         CALL Backspace  ; Print seconds
@@ -154,27 +194,28 @@ void main(void){
     SkipSec:
         JP Delayloop
 
-CheckAlarm:
-    BTJF 0x53,#5,ChkDone         ; alarm disabled?
-
-    LD  A,0x6B   ; alarm hr high
-    CP  A,0x65
-    JRNE ChkDone
-    LD  A,0x6A   ; alarm hr low
-    CP  A,0x64
-    JRNE ChkDone
-    LD  A,0x69   ; alarm min high
-    CP  A,0x63
-    JRNE ChkDone
-    LD  A,0x68   ; alarm min low
-    CP  A,0x62
-    JRNE ChkDone
-    BSET 0x53,#6             ; start beeping
-ChkDone:
-    RET
+    CheckAlarm:
+        LD A,0x51
+        CP A,#0 ; Is in regular mode?
+        JRNE ChkDone
+        BTJF 0x53,#5,ChkDone         ; alarm disabled?
+        LD  A,0x6B   ; alarm hr high
+        CP  A,0x65
+        JRNE ChkDone
+        LD  A,0x6A   ; alarm hr low
+        CP  A,0x64
+        JRNE ChkDone
+        LD  A,0x69   ; alarm min high
+        CP  A,0x63
+        JRNE ChkDone
+        LD  A,0x68   ; alarm min low
+        CP  A,0x62
+        JRNE ChkDone
+        BSET 0x53,#6             ; start beeping
+    ChkDone:
+        RET
 
     RegularMode:
-        CLR 0x56
         BSET 0x53,#3 ; Make sure seconds are being updated
         BSET 0x53,#4 ; And the clock is ticking
         BTJT 0x53,#2,SkipDispUpdReg ; Can I update Display?
@@ -199,10 +240,14 @@ ChkDone:
     SkipDispUpdReg:
         BTJT 0x500B,#7, SkipAlmToggle
         BTJF 0x52,#1, SkipAlmToggle
+        BTJF 0x52,#2, SkipAlmToggle
         BRES 0x52,#1
+        BRES 0x52,#2
         BCPL 0x53,#5 ; Toggle Alarm
         BTJT 0x53,#5, EnableAlm
     DisableAlm:
+        BRES 0x53,#7
+        BRES 0x53,#6
         BRES 0x53,#5
         BRES 0x53,#2
         JP SkipAlmToggle
@@ -212,20 +257,26 @@ ChkDone:
     SkipAlmToggle:
         BTJT 0x500B,#6, SkipSnooze
         BTJF 0x52,#1, SkipSnooze
+        BTJF 0x52,#2, SkipSnooze
         BRES 0x52,#1
-        BRES 0x53,#6 ;Snooze alarm 
+        BRES 0x52,#2
+        BTJF 0x53,#6,SkipSnooze ; only snooze alarm that is going
+        INC 0x68 ; Add a minute to the alarm
+        CALL AdjustTime
+        BRES 0x53,#6 ;Silence alarm 
         BRES 0x53,#7
     SkipSnooze: 
         RET
+
     ClockMode:
         BTJT 0x51,#0,AlarmSet
         BTJT 0x51,#1,ClockSet
         JP RegularMode
     AlarmSet:
-        BRES 0x53,#3
-        BRES 0x53,#4
-        BTJT 0x53,#1,SkipDispUpdAlm
-        CALL DispAlarm
+        BSET 0x53,#3 ; Stop Updating seconds *************************************
+        BRES 0x53,#4 ; Stop Counting
+        BTJT 0x53,#1,SkipDispUpdAlm ; Is alarm already configured?
+        CALL DispAlarm ; No configure it
         LD A, #0b00001110; Cursor On
         CALL PopulateShift
         CALL SendCommand
@@ -238,18 +289,18 @@ ChkDone:
         CALL SendLetter
         CALL Backspace
         CALL ReturnHome
-        CLR 0x54
-        CLR 0x55
+        CLR 0x56 ; Reset alarm variables
+        CLR 0x57
     SkipDispUpdAlm:
-        CALL AlarmSetLogic
+        CALL AlarmSetLogic ; Set alarm
         RET
     ClockSet:
-        CLR 0x56
-        PUSHW X
-        BRES 0x53,#3
-        BRES 0x53,#4
-        BTJT 0x53,#0,SkipDispUpdClk
-        LD A, #0b00001110
+        CLR 0x56 ; Reset cursor position
+        PUSHW X ; Perserve X
+        BRES 0x53,#3 ; Stop updating seconds
+        BRES 0x53,#4 ; Stop counting
+        BTJT 0x53,#0,SkipDispUpdClk  ; Is clock configured
+        LD A, #0b00001110 ; No confiure it
         CALL PopulateShift
         CALL SendCommand
         CALL ClearShift
@@ -261,13 +312,15 @@ ChkDone:
         CALL SendLetter
         CALL Backspace
         CALL ReturnHome
-        CLR 0x54
+        CLR 0x54 ; Reset cursor
         CLR 0x55
     SkipDispUpdClk:
-        BTJT 0x500B,#7,SkipClkMov
+        BTJT 0x500B,#7,SkipClkMov ; Button Press?
         BTJF 0x52,#1,SkipClkMov
-        BRES 0x52,#1
-        INC 0x54
+        BTJF 0x52,#2,SkipClkMov
+        BRES 0x52,#1 ; Debounce
+        BRES 0x52,#2 ; Debounce
+        INC 0x54 ; Cursor move logic ==================
         INC 0x55
         LD A,0x54
         CP A,#2
@@ -288,10 +341,12 @@ ChkDone:
         CLR 0x55
         CALL MovRight
         CALL ReturnHome
-    SkipClkMov:
+    SkipClkMov: ; Clock change logic ========================
         BTJT 0x500B,#6,SkipClkInc
         BTJF 0x52,#1,SkipClkInc
+        BTJF 0x52,#2,SkipClkInc
         BRES 0x52,#1
+        BRES 0x52,#2
         LD A, #5
         SUB A, 0x55 
         CLRW X
@@ -331,74 +386,78 @@ ChkDone:
         POPW X
         RET
 
-AlarmSetLogic:
-    PUSHW X
-    BTJT 0x500B,#7,SkipAlmMov ; Is move button pressed?
-    BTJF 0x52,#1,SkipAlmMov
-    BRES 0x52,#1
-    INC 0x56 ; Inc cursor position
-    INC 0x57 ; inc number index
-    LD A,0x56
-    CP A,#2 ; Is Colon?
-    JREQ MovTwoAlm ; Yes Move Two
-    CP A,#5 ; Is Colon?
-    JREQ MovTwoAlm ; Yes Move Two
-    CP A,#8 ; Is at end?
-    JREQ ToStartAlm ; Yes reset Cursor
-    JP MovOneAlm ; Else move cursor Regularly
-MovTwoAlm:
-    CALL MovRight
-    INC 0x56
-MovOneAlm:
-    CALL MovRight
-    JP SkipAlmMov
-ToStartAlm:
-    CLR 0x56
-    CLR 0x57
-    CALL MovRight ; Adjust to correct position before moving home
-    CALL ReturnHome
-SkipAlmMov:
-    BTJT 0x500B,#6,SkipAlmInc ; Is increment button pressed?
-    BTJF 0x52,#1,SkipAlmInc
-    BRES 0x52,#1
-    LD A, 0x57
-    ;SUB A, 0x57      ; Adjust for registers being revesed from inx. (Hrs->sec vs sec->hrs) ** Try uncommenting this
-    CLRW X
-    EXG A,XL
-    INC (0x66,X) ; Adjust each alarm register
-    LD A, 0x57 ; Below just checks for overflow
-    CP A,#0
-    JREQ AdjTwoAlm
-    CP A,#2
-    JREQ AdjSixAlm
-    CP A,#4
-    JREQ AdjSixAlm
-    LD A,(0x66,X)
-    CP A,#10
-    JRNE PrintValAlm
-    CLR (0x66,X)
-    JP PrintValAlm
-AdjSixAlm:
-    LD A,(0x66,X)
-    CP A,#6
-    JRNE PrintValAlm
-    CLR (0x66,X)
-    JP PrintValAlm
-AdjTwoAlm:
-    LD A,(0x66,X)
-    CP A,#3
-    JRNE PrintValAlm
-    CLR (0x66,X)
-PrintValAlm: ; Throw new value to display
-    LD A,(0x66,X)
-    ADD A,#48 ; Adjust to ASCII
-    CALL PopulateShift
-    CALL SendLetter
-    CALL Backspace
-    CALL ClearShift
-SkipAlmInc:
-    POPW X
-    RET
+    AlarmSetLogic:
+        PUSHW X
+        BTJT 0x500B,#7,SkipAlmMov ; Is move button pressed?
+        BTJF 0x52,#1,SkipAlmMov
+        BTJF 0x52,#2,SkipAlmMov
+        BRES 0x52,#1
+        BRES 0x52,#2
+        INC 0x56 ; Inc cursor position
+        INC 0x57 ; inc number index
+        LD A,0x56
+        CP A,#2 ; Is Colon?
+        JREQ MovTwoAlm ; Yes Move Two
+        CP A,#5 ; Is Colon?
+        JREQ MovTwoAlm ; Yes Move Two
+        CP A,#8 ; Is at end?
+        JREQ ToStartAlm ; Yes reset Cursor
+        JP MovOneAlm ; Else move cursor Regularly
+    MovTwoAlm:
+        CALL MovRight
+        INC 0x56
+    MovOneAlm:
+        CALL MovRight
+        JP SkipAlmMov
+    ToStartAlm:
+        CLR 0x56
+        CLR 0x57
+        CALL MovRight ; Adjust to correct position before moving home
+        CALL ReturnHome
+    SkipAlmMov:
+        BTJT 0x500B,#6,SkipAlmInc ; Is increment button pressed?
+        BTJF 0x52,#1,SkipAlmInc
+        BTJF 0x52,#2,SkipAlmInc
+        BRES 0x52,#1
+        BRES 0x52,#2
+        LD A, #5
+        SUB A, 0x57      ; Adjust for registers being revesed from inx. (Hrs->sec vs sec->hrs) 
+        CLRW X
+        EXG A,XL
+        INC (0x66,X) ; Adjust each alarm register
+        LD A, 0x57 ; Below just checks for overflow
+        CP A,#0
+        JREQ AdjTwoAlm
+        CP A,#2
+        JREQ AdjSixAlm
+        CP A,#4
+        JREQ AdjSixAlm
+        LD A,(0x66,X)
+        CP A,#10
+        JRNE PrintValAlm
+        CLR (0x66,X)
+        JP PrintValAlm
+    AdjSixAlm:
+        LD A,(0x66,X)
+        CP A,#6
+        JRNE PrintValAlm
+        CLR (0x66,X)
+        JP PrintValAlm
+    AdjTwoAlm:
+        LD A,(0x66,X)
+        CP A,#3
+        JRNE PrintValAlm
+        CLR (0x66,X)
+    PrintValAlm: ; Throw new value to display
+        LD A,(0x66,X)
+        ADD A,#48 ; Adjust to ASCII
+        CALL PopulateShift
+        CALL SendLetter
+        CALL Backspace
+        CALL ClearShift
+    SkipAlmInc:
+        POPW X
+        RET
     
         
     ; Clears the shift register
@@ -518,42 +577,44 @@ SkipAlmInc:
 
 
     AdjustTime:
-        LD A,0x60
+        LD A,0x60 ; Are seconds low (00:00:0X) overflow?
         CP A,#10
         JRNE AdjTimeDoneSec
     SecLowOv:
-        INC 0x61
+        INC 0x61 ; Yes inc sec high (00:00:X0)
         LD A,0x61
-        CLR 0x60
+        CLR 0x60 ; Are sec high overflow?
         CP A,#6
         JRNE AdjTimeDone
     SecHighOver:
-        INC 0x62
+        INC 0x62 ; Are mins low over?
         LD A,0x62
         CLR 0x61
         CP A,#10
         JRNE AdjTimeDone 
     MinLowOver:
-        INC 0x63
+        INC 0x63 ; Are mins high over?
         LD A,0x63
         CLR 0x62
         CP A,#6
         JRNE AdjTimeDone
     MinHighOver:
-        INC 0x64
-        CLR 0x63
-        CP A,#10
-        LD A,0x65
-        CP A,#2
-        JREQ DayDone
-        JRNE AdjTimeDone
-    HrLowOver:
-        INC 0x65
+        INC 0x64        ; hour low++
+        CLR 0x63        ; min high = 0
+        ; carry hour low if it hit 10
+        LD  A,0x64
+        CP  A,#10
+        JRNE Check24
         CLR 0x64
-        JP AdjTimeDone
-    DayDone:
-        LD A,0x64
-        CP A,#4
+        INC 0x65
+    Check24:
+        ; reset only at 24:00
+        LD  A,0x65
+        CP  A,#2
+        JRNE AdjTimeDone
+        LD  A,0x64
+        CP  A,#4
+        JRNE AdjTimeDone
         CLR 0x65
         CLR 0x64
     AdjTimeDone:
@@ -618,46 +679,46 @@ SkipAlmInc:
 
     DispAlarm:
         CALL ClearScreen
-        LD A, 0x66
+        LD A, 0x6B
         ADD A,#48 ; Adjust to ASCII
         CALL PopulateShift
         CALL SendLetter
         CALL ClearShift
         
-        LD A, 0x67
-        ADD A,#48 ; Adjust to ASCII
-        CALL PopulateShift
-        CALL SendLetter
-        CALL ClearShift
-
-        LD A,#0x3A
-        CALL PopulateShift
-        CALL SendLetter
-        CALL ClearShift
-        LD A, 0x68
-        ADD A,#48 ; Adjust to ASCII
-        CALL PopulateShift
-        CALL SendLetter
-        CALL ClearShift
-        
-        LD A, 0x69
-        ADD A,#48 ; Adjust to ASCII
-        CALL PopulateShift
-        CALL SendLetter
-        CALL ClearShift
-
-        LD A,#0x3A
-        CALL PopulateShift
-        CALL SendLetter
-        CALL ClearShift
-
         LD A, 0x6A
         ADD A,#48 ; Adjust to ASCII
         CALL PopulateShift
         CALL SendLetter
         CALL ClearShift
 
-        LD A, 0x6B
+        LD A,#0x3A
+        CALL PopulateShift
+        CALL SendLetter
+        CALL ClearShift
+        LD A, 0x69
+        ADD A,#48 ; Adjust to ASCII
+        CALL PopulateShift
+        CALL SendLetter
+        CALL ClearShift
+        
+        LD A, 0x68
+        ADD A,#48 ; Adjust to ASCII
+        CALL PopulateShift
+        CALL SendLetter
+        CALL ClearShift
+
+        LD A,#0x3A
+        CALL PopulateShift
+        CALL SendLetter
+        CALL ClearShift
+
+        LD A, 0x67
+        ADD A,#48 ; Adjust to ASCII
+        CALL PopulateShift
+        CALL SendLetter
+        CALL ClearShift
+
+        LD A, 0x66
         ADD A,#48 ; Adjust to ASCII
         CALL PopulateShift
         CALL SendLetter
